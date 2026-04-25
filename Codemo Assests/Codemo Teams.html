@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Codemo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: 'Poppins', sans-serif; -webkit-font-smoothing: antialiased; }
+    #root { height: 100%; }
+    input, button, select { font-family: 'Poppins', sans-serif; }
+    input:focus { outline: none; }
+    button { cursor: pointer; border: none; background: transparent; }
+
+    /* ── Mode ripple ── */
+    @keyframes rippleExpand {
+      0%   { transform: translate(-50%,-50%) scale(0); opacity: .45; }
+      100% { transform: translate(-50%,-50%) scale(6);  opacity: 0; }
+    }
+    .mode-ripple {
+      position: fixed; z-index: 9999; pointer-events: none;
+      border-radius: 50%;
+      width: 100vmax; height: 100vmax;
+      animation: rippleExpand .6s cubic-bezier(.4,0,.2,1) forwards;
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, createContext, useContext, useCallback } = React;
+
+/* ══════════════════════════════════════════════
+   THEME — macOS 26 Tahoe Liquid Glass
+══════════════════════════════════════════════ */
+const mkTheme = (dark) => ({
+  mode: dark ? 'dark' : 'light',
+  /* surfaces */
+  bg:          dark ? '#080808'                        : '#e8e8ee',
+  navGlass:    dark ? 'rgba(18,18,22,0.78)'           : 'rgba(255,255,255,0.72)',
+  sideGlass:   dark ? 'rgba(16,16,20,0.82)'           : 'rgba(255,255,255,0.78)',
+  cardGlass:   dark ? 'rgba(22,22,28,0.88)'           : 'rgba(255,255,255,0.86)',
+  inputGlass:  dark ? 'rgba(30,30,38,0.90)'           : 'rgba(240,240,248,0.90)',
+  chipGlass:   dark ? 'rgba(28,28,36,0.80)'           : 'rgba(230,230,240,0.80)',
+  /* borders — inner highlight + subtle ring */
+  border:      dark ? 'rgba(255,255,255,0.09)'        : 'rgba(0,0,0,0.10)',
+  innerHi:     dark ? 'rgba(255,255,255,0.12)'        : 'rgba(255,255,255,0.90)',
+  ring:        dark ? 'rgba(255,255,255,0.04)'        : 'rgba(0,0,0,0.04)',
+  /* text */
+  text1:       dark ? '#f0f0f0'  : '#0a0a0a',
+  text2:       dark ? '#787878'  : '#5a5a5a',
+  text3:       dark ? '#404040'  : '#a0a0a0',
+  /* icon */
+  iconIdle:    dark ? '#585858'  : '#8a8a8a',
+  /* accents */
+  blue:        '#2355E8',
+  blueGlow:    dark ? 'rgba(35,85,232,0.22)' : 'rgba(35,85,232,0.12)',
+  /* misc */
+  shadow:      dark ? '0 24px 64px rgba(0,0,0,0.75)' : '0 12px 48px rgba(0,0,0,0.12)',
+  navShadow:   dark ? '0 4px 32px rgba(0,0,0,0.6)'   : '0 4px 24px rgba(0,0,0,0.10)',
+  blur:        'blur(28px) saturate(200%)',
+  rippleColor: dark ? '#1a1a2e' : '#e8eeff',
+});
+
+const ThemeCtx = createContext(mkTheme(true));
+const useT = () => useContext(ThemeCtx);
+
+/* glass box-shadow helper */
+const glassShadow = (T, extra = '') =>
+  `inset 0 1px 0 ${T.innerHi}, 0 0 0 1px ${T.border}, 0 0 0 3px ${T.ring}${extra ? ', ' + extra : ''}`;
+
+/* ══════════════════════════════════════════════
+   ICON PATHS
+══════════════════════════════════════════════ */
+const P = {
+  home:     'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
+  team:     'M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z',
+  events:   'M18 11v2h4v-2h-4zm-2 6.61c.96.71 2.21 1.65 3.2 2.39.4-.53.8-1.07 1.2-1.6-.99-.74-2.24-1.68-3.2-2.4-.4.54-.8 1.08-1.2 1.61zM20.4 5.6c-.4-.53-.8-1.07-1.2-1.6-.99.74-2.24 1.68-3.2 2.4.4.53.8 1.07 1.2 1.6.96-.72 2.21-1.65 3.2-2.4zM4 9c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h1v4h2v-4h1l5 3V6L8 9H4zm11.5 3c0-1.33-.58-2.53-1.5-3.35v6.69c.92-.81 1.5-2.01 1.5-3.34z',
+  articles: 'M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z',
+  elearn:   'M12 3L1 9l4 2.18V15c0 1.21.6 2.34 1.61 3.03L12 21l5.39-2.97C18.4 17.34 19 16.21 19 15v-3.82L21 10v7h2V9L12 3zm5 11.82c0 .61-.31 1.18-.81 1.51L12 18.82l-4.19-2.49A1.84 1.84 0 0 1 7 14.82V13.5l5 2.73 5-2.73v1.32z',
+  projects: 'M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z',
+  sun:      'M12 7a5 5 0 1 0 0 10A5 5 0 0 0 12 7zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-12.37l-1.06 1.06c-.39.39-.39 1.03 0 1.41.39.39 1.03.39 1.41 0l1.06-1.06c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0zM7.05 18.36l-1.06 1.06c-.39.39-.39 1.03 0 1.41.39.39 1.03.39 1.41 0l1.06-1.06c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0z',
+  moon:     'M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z',
+  menu:     'M4 18h16v-2H4v2zm0-5h16v-2H4v2zm0-7v2h16V6H4z',
+  close:    'M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
+  logout:   'M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z',
+  search:   'M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z',
+  user:     'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',
+  eye:      'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
+  eyeoff:   'M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z',
+  shield:   'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z',
+  gear:     'M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.1 7.1 0 0 0-1.62-.94l-.36-2.54A.484.484 0 0 0 14 2h-3.84c-.24 0-.43.17-.47.41l-.36 2.54a7.1 7.1 0 0 0-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2z',
+};
+
+const Ico = ({ d, fill, size = 26 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} style={{ flexShrink: 0, display: 'block' }}>
+    <path d={d} />
+  </svg>
+);
+
+/* ══════════════════════════════════════════════
+   LOGO
+══════════════════════════════════════════════ */
+const Logo = ({ size = 34 }) => (
+  <svg width={size} height={size} viewBox="0 0 34 34" fill="none">
+    <circle cx="17" cy="17" r="17" fill="#2355E8" />
+    <ellipse cx="17" cy="17" rx="8.5" ry="5.8" stroke="white" strokeWidth="1.9" fill="none" />
+    <circle cx="17" cy="17" r="3.1" fill="white" />
+    <polyline points="22,11.5 25.5,8 25.5,11.5" stroke="white" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    <line x1="25.5" y1="8" x2="22" y2="8" stroke="white" strokeWidth="1.9" strokeLinecap="round" />
+  </svg>
+);
+
+/* ══════════════════════════════════════════════
+   SOCIAL
+══════════════════════════════════════════════ */
+const GIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24">
+    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
+    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+  </svg>
+);
+const AppleIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83zM13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+  </svg>
+);
+const MSIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 22 22">
+    <rect x="0" y="0" width="10" height="10" fill="#F25022" />
+    <rect x="12" y="0" width="10" height="10" fill="#7FBA00" />
+    <rect x="0" y="12" width="10" height="10" fill="#00A4EF" />
+    <rect x="12" y="12" width="10" height="10" fill="#FFB900" />
+  </svg>
+);
+
+/* ══════════════════════════════════════════════
+   GLASS SURFACE primitive
+══════════════════════════════════════════════ */
+function GlassSurface({ children, style: s = {}, radius = 22 }) {
+  const T = useT();
+  return (
+    <div style={{
+      background: T.cardGlass,
+      backdropFilter: T.blur,
+      WebkitBackdropFilter: T.blur,
+      borderRadius: radius,
+      border: `1px solid ${T.border}`,
+      boxShadow: glassShadow(T, T.shadow),
+      ...s,
+    }}>{children}</div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   PRIMITIVES
+══════════════════════════════════════════════ */
+function Btn({ children, onClick, variant = 'primary', full, style: s = {} }) {
+  const T = useT();
+  const isPrimary = variant === 'primary';
+  return (
+    <button onClick={onClick} style={{
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      borderRadius: 30, padding: '14px 28px', fontSize: 16, fontWeight: 500,
+      cursor: 'pointer', transition: 'filter .15s',
+      width: full ? '100%' : undefined, letterSpacing: '.01em',
+      background: isPrimary ? '#2355E8' : T.chipGlass,
+      color: isPrimary ? '#fff' : T.text2,
+      border: isPrimary ? 'none' : `1px solid ${T.border}`,
+      backdropFilter: T.blur, WebkitBackdropFilter: T.blur,
+      boxShadow: isPrimary
+        ? 'inset 0 1px 0 rgba(255,255,255,.18), 0 4px 20px rgba(35,85,232,.35)'
+        : glassShadow(T),
+      ...s,
+    }}
+      onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.12)'}
+      onMouseLeave={e => e.currentTarget.style.filter = 'brightness(1)'}
+    >{children}</button>
+  );
+}
+
+function Field({ placeholder, value, onChange, type = 'text', rightEl, readOnly }) {
+  const T = useT();
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <input type={type} placeholder={placeholder} value={value}
+        onChange={onChange} readOnly={readOnly}
+        style={{
+          width: '100%', background: T.inputGlass,
+          backdropFilter: T.blur, WebkitBackdropFilter: T.blur,
+          border: `1px solid ${T.border}`, borderRadius: 14,
+          boxShadow: glassShadow(T),
+          color: T.text1, padding: rightEl ? '16px 52px 16px 20px' : '16px 20px',
+          fontSize: 16, transition: 'border-color .15s, box-shadow .15s',
+        }}
+        onFocus={e => { e.target.style.borderColor = 'rgba(35,85,232,.5)'; e.target.style.boxShadow = `inset 0 1px 0 ${T.innerHi}, 0 0 0 1px rgba(35,85,232,.4), 0 0 0 4px rgba(35,85,232,.12)`; }}
+        onBlur={e => { e.target.style.borderColor = T.border; e.target.style.boxShadow = glassShadow(T); }}
+      />
+      {rightEl && (
+        <div style={{ position: 'absolute', right: 18, top: '50%', transform: 'translateY(-50%)' }}>
+          {rightEl}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LogoLockup({ style: s = {} }) {
+  const T = useT();
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 11, ...s }}>
+      <Logo />
+      <span style={{ color: T.text1, fontWeight: 700, fontSize: 21, letterSpacing: '-.02em' }}>Codemo</span>
+    </div>
+  );
+}
+
+function SocialRow() {
+  const T = useT();
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', gap: 14 }}>
+      {[{ icon: <GIcon />, color: T.text1 }, { icon: <AppleIcon /> }, { icon: <MSIcon /> }].map((item, i) => (
+        <button key={i} style={{
+          width: 56, height: 56, borderRadius: 16,
+          background: T.chipGlass, backdropFilter: T.blur, WebkitBackdropFilter: T.blur,
+          border: `1px solid ${T.border}`, boxShadow: glassShadow(T),
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: T.text1, transition: 'box-shadow .15s',
+        }}
+          onMouseEnter={e => e.currentTarget.style.boxShadow = glassShadow(T, `0 4px 16px ${T.blueGlow}`)}
+          onMouseLeave={e => e.currentTarget.style.boxShadow = glassShadow(T)}
+        >{item.icon}</button>
+      ))}
+    </div>
+  );
+}
+
+function Divider({ label }) {
+  const T = useT();
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div style={{ flex: 1, height: 1, background: T.border }} />
+      {label && <span style={{ color: T.text3, fontSize: 13, whiteSpace: 'nowrap', fontWeight: 500 }}>{label}</span>}
+      <div style={{ flex: 1, height: 1, background: T.border }} />
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   AUTH PAGE
+══════════════════════════════════════════════ */
+function AuthPage({ setView }) {
+  const T = useT();
+  const [email, setEmail] = useState('');
+  return (
+    <div style={{ minHeight: '100vh', background: T.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <h1 style={{ color: T.text1, fontWeight: 300, fontSize: 36, marginBottom: 44, textAlign: 'center', letterSpacing: '.01em' }}>
+        Your Career is your Worth
+      </h1>
+      <GlassSurface style={{ width: 380, padding: 32, display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <Field placeholder="Enter Email" value={email} onChange={e => setEmail(e.target.value)} />
+        <div style={{ display: 'flex', gap: 12 }}>
+          <Btn onClick={() => setView('login')} style={{ flex: 1 }}>Continue</Btn>
+          <Btn variant="ghost" onClick={() => setView('signup-1')} style={{ flex: 1 }}>Sign Up</Btn>
+        </div>
+        <Divider label="or Continue via" />
+        <SocialRow />
+      </GlassSurface>
+      <LogoLockup style={{ marginTop: 60 }} />
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   LOGIN PAGE
+══════════════════════════════════════════════ */
+function LoginPage({ setView }) {
+  const T = useT();
+  const [pass, setPass] = useState('');
+  const [show, setShow] = useState(false);
+  return (
+    <div style={{ minHeight: '100vh', background: T.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <h1 style={{ color: T.text1, fontWeight: 300, fontSize: 36, marginBottom: 44 }}>Skills Matters Most</h1>
+      <GlassSurface style={{ width: 380, padding: 32, display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <Field value="uzairrshahid@gmail.com" readOnly />
+        <Field placeholder="Enter Password" type={show ? 'text' : 'password'} value={pass} onChange={e => setPass(e.target.value)}
+          rightEl={<button onClick={() => setShow(v => !v)} style={{ display: 'flex' }}><Ico d={show ? P.eye : P.eyeoff} fill={T.text3} size={20} /></button>}
+        />
+        <Btn full onClick={() => setView('home-loggedin')}>Login</Btn>
+      </GlassSurface>
+      <GlassSurface style={{ width: 380, marginTop: 14, padding: '16px 28px', textAlign: 'center' }}>
+        <span style={{ color: T.text3, fontSize: 16 }}>Recaptcha</span>
+      </GlassSurface>
+      <LogoLockup style={{ marginTop: 60 }} />
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   SIGNUP STEPS
+══════════════════════════════════════════════ */
+function SignUp1({ setView }) {
+  const T = useT();
+  const [email, setEmail] = useState('uzairrshahid@gmail.com');
+  const [pass, setPass] = useState('');
+  const [show, setShow] = useState(false);
+  return (
+    <div style={{ minHeight: '100vh', background: T.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <h1 style={{ color: T.text1, fontWeight: 300, fontSize: 36, marginBottom: 44 }}>Skills Matters Most</h1>
+      <GlassSurface style={{ width: 380, padding: 32, display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <Field value={email} onChange={e => setEmail(e.target.value)} />
+        <Field placeholder="Enter Password" type={show ? 'text' : 'password'} value={pass} onChange={e => setPass(e.target.value)}
+          rightEl={<button onClick={() => setShow(v => !v)} style={{ display: 'flex' }}><Ico d={show ? P.eye : P.eyeoff} fill={T.text3} size={20} /></button>}
+        />
+        <div style={{ textAlign: 'center' }}>
+          <span style={{ color: '#4a80ff', fontSize: 14, cursor: 'pointer', fontWeight: 500 }}>Read User Privacy Policies</span>
+        </div>
+        <Btn full onClick={() => setView('signup-2')}>Continue</Btn>
+      </GlassSurface>
+      <LogoLockup style={{ marginTop: 60 }} />
+    </div>
+  );
+}
+
+function SignUp2({ setView }) {
+  const T = useT();
+  const [dd, setDd] = useState(''); const [mm, setMm] = useState(''); const [yyyy, setYyyy] = useState('');
+  const [uname, setUname] = useState('');
+  const [gender, setGender] = useState('');
+  const Chip = ({ label }) => (
+    <button onClick={() => setGender(label)} style={{
+      background: gender === label ? '#2355E8' : T.chipGlass,
+      color: gender === label ? '#fff' : T.text2,
+      border: `1px solid ${gender === label ? '#2355E8' : T.border}`,
+      borderRadius: 28, padding: '11px 22px', fontSize: 15, fontWeight: 500,
+      backdropFilter: T.blur, WebkitBackdropFilter: T.blur,
+      boxShadow: gender === label ? 'inset 0 1px 0 rgba(255,255,255,.18)' : glassShadow(T),
+      transition: 'all .15s',
+    }}>{label}</button>
+  );
+  return (
+    <div style={{ minHeight: '100vh', background: T.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <GlassSurface style={{ width: 400, padding: 32, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div>
+          <p style={{ color: T.text2, fontSize: 12, fontWeight: 600, marginBottom: 14, letterSpacing: '.08em', textTransform: 'uppercase' }}>Date of Birth</p>
+          <div style={{ display: 'flex', gap: 10 }}>
+            {[{ ph: 'DD', v: dd, s: setDd, w: 76 }, { ph: 'MM', v: mm, s: setMm, w: 76 }, { ph: 'YYYY', v: yyyy, s: setYyyy, w: 110 }].map(({ ph, v, s, w }) => (
+              <input key={ph} value={v} onChange={e => s(e.target.value)} placeholder={ph} maxLength={ph === 'YYYY' ? 4 : 2}
+                style={{ width: w, background: T.inputGlass, backdropFilter: T.blur, WebkitBackdropFilter: T.blur, border: `1px solid ${T.border}`, borderRadius: 14, boxShadow: glassShadow(T), color: T.text1, padding: '15px 0', fontSize: 16, textAlign: 'center', fontFamily: 'Poppins,sans-serif' }}
+                onFocus={e => e.target.style.borderColor = 'rgba(35,85,232,.5)'} onBlur={e => e.target.style.borderColor = T.border}
+              />
+            ))}
+          </div>
+        </div>
+        <div>
+          <p style={{ color: T.text2, fontSize: 12, fontWeight: 600, marginBottom: 14, letterSpacing: '.08em', textTransform: 'uppercase' }}>Username</p>
+          <Field placeholder="Enter your username" value={uname} onChange={e => setUname(e.target.value)} />
+        </div>
+        <div>
+          <p style={{ color: T.text2, fontSize: 12, fontWeight: 600, marginBottom: 14, letterSpacing: '.08em', textTransform: 'uppercase' }}>Gender</p>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {['Male', 'Female', 'Not Listed'].map(g => <Chip key={g} label={g} />)}
+          </div>
+        </div>
+        <Btn full onClick={() => setView('signup-3')}>Continue</Btn>
+      </GlassSurface>
+      <LogoLockup style={{ marginTop: 60 }} />
+    </div>
+  );
+}
+
+function SignUp3({ setView }) {
+  const T = useT();
+  const [domain, setDomain] = useState('');
+  const [status, setStatus] = useState('');
+  const Chip = ({ label }) => (
+    <button onClick={() => setStatus(label)} style={{
+      background: status === label ? '#2355E8' : T.chipGlass,
+      color: status === label ? '#fff' : T.text2,
+      border: `1px solid ${status === label ? '#2355E8' : T.border}`,
+      borderRadius: 28, padding: '11px 22px', fontSize: 15, fontWeight: 500,
+      backdropFilter: T.blur, WebkitBackdropFilter: T.blur,
+      boxShadow: status === label ? 'inset 0 1px 0 rgba(255,255,255,.18)' : glassShadow(T),
+      transition: 'all .15s',
+    }}>{label}</button>
+  );
+  return (
+    <div style={{ minHeight: '100vh', background: T.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <GlassSurface style={{ width: 400, padding: 32, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div>
+          <p style={{ color: T.text2, fontSize: 12, fontWeight: 600, marginBottom: 14, letterSpacing: '.08em', textTransform: 'uppercase' }}>Select your Domain</p>
+          <Field placeholder="Enter your Career Domain" value={domain} onChange={e => setDomain(e.target.value)} />
+        </div>
+        <div>
+          <p style={{ color: T.text2, fontSize: 12, fontWeight: 600, marginBottom: 14, letterSpacing: '.08em', textTransform: 'uppercase' }}>Current Status</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            {['Freelancer', 'Student', 'Employed', 'Unemployed', 'Business Owner'].map(s => <Chip key={s} label={s} />)}
+          </div>
+        </div>
+        <Btn full onClick={() => setView('signup-4')} style={{ marginTop: 8 }}>Continue</Btn>
+      </GlassSurface>
+      <LogoLockup style={{ marginTop: 60 }} />
+    </div>
+  );
+}
+
+function SignUp4({ setView }) {
+  const T = useT();
+  const [code, setCode] = useState('');
+  return (
+    <div style={{ minHeight: '100vh', background: T.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <GlassSurface style={{ width: 380, padding: 32, display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <p style={{ color: T.text1, fontSize: 17, fontWeight: 600 }}>Enter Confirmation Code</p>
+        <Field placeholder="Check your Email Inbox" value={code} onChange={e => setCode(e.target.value)} />
+        <Btn full onClick={() => setView('success')}>Continue</Btn>
+      </GlassSurface>
+      <GlassSurface style={{ width: 380, marginTop: 14, padding: '16px 28px', textAlign: 'center' }}>
+        <span style={{ color: T.text3, fontSize: 16 }}>Recaptcha</span>
+      </GlassSurface>
+      <LogoLockup style={{ marginTop: 60 }} />
+    </div>
+  );
+}
+
+function SuccessPage({ setView }) {
+  const T = useT();
+  useEffect(() => { const t = setTimeout(() => setView('home-loggedin'), 2800); return () => clearTimeout(t); }, []);
+  return (
+    <div style={{ minHeight: '100vh', background: T.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: '44%', left: '50%', transform: 'translate(-50%,-50%)', width: 700, height: 500, background: 'radial-gradient(ellipse, rgba(28,65,220,.50) 0%, rgba(14,36,120,.15) 52%, transparent 70%)', filter: 'blur(8px)', pointerEvents: 'none' }} />
+      <p style={{ color: '#ccd6fc', fontWeight: 300, fontSize: 32, letterSpacing: '.04em', position: 'relative', zIndex: 1 }}>Register Successful</p>
+      <div style={{ position: 'absolute', bottom: 52 }}><LogoLockup /></div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   NAVBAR  — glass pill matching original layout
+══════════════════════════════════════════════ */
+function NavBar({ setView, searchOpen, setSearchOpen, profileOpen, setProfileOpen, signupOpen, setSignupOpen, isLoggedIn }) {
+  const T = useT();
+  const ref = useRef(null);
+  useEffect(() => {
+    const fn = e => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setProfileOpen(false); setSignupOpen(false);
+        if (searchOpen) setSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', fn);
+    return () => document.removeEventListener('mousedown', fn);
+  }, [searchOpen]);
+
+  /* glass circle search btn */
+  const SearchBtn = () => {
+    const [hov, setHov] = useState(false);
+    return (
+      <button
+        onClick={() => setSearchOpen(true)}
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
+        style={{
+          width: 38, height: 38, borderRadius: '50%',
+          background: hov
+            ? (T.mode === 'dark' ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.08)')
+            : (T.mode === 'dark' ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.04)'),
+          border: `1.5px solid ${T.mode === 'dark' ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.12)'}`,
+          boxShadow: `0 0 0 3px ${T.ring}, inset 0 1px 0 ${T.innerHi}`,
+          backdropFilter: T.blur, WebkitBackdropFilter: T.blur,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'background .15s',
+        }}
+      >
+        <Ico d={P.search} fill={T.text2} size={18} />
+      </button>
+    );
+  };
+
+  /* glass auth pill */
+  const AuthPill = () => {
+    const [hov, setHov] = useState(false);
+    return (
+      <button
+        onClick={() => { isLoggedIn ? setProfileOpen(v => !v) : setSignupOpen(v => !v); }}
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 9,
+          padding: '6px 6px 6px 16px', borderRadius: 30,
+          background: hov
+            ? (T.mode === 'dark' ? 'rgba(255,255,255,.10)' : 'rgba(0,0,0,.07)')
+            : (T.mode === 'dark' ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.03)'),
+          border: `1.5px solid ${T.mode === 'dark' ? 'rgba(255,255,255,.13)' : 'rgba(0,0,0,.12)'}`,
+          boxShadow: `0 0 0 3px ${T.ring}, inset 0 1px 0 ${T.innerHi}`,
+          backdropFilter: T.blur, WebkitBackdropFilter: T.blur,
+          color: T.text1, fontSize: 15, fontWeight: 500,
+          transition: 'background .15s', cursor: 'pointer',
+        }}
+      >
+        <span>{isLoggedIn ? 'Muhammad' : 'Sign Up'}</span>
+        <div style={{
+          width: 32, height: 32, borderRadius: '50%',
+          background: T.mode === 'dark' ? 'rgba(255,255,255,.10)' : 'rgba(0,0,0,.07)',
+          border: `1.5px solid ${T.mode === 'dark' ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.14)'}`,
+          boxShadow: `0 0 0 2.5px ${T.ring}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Ico d={P.user} fill={T.text2} size={17} />
+        </div>
+      </button>
+    );
+  };
+
+  return (
+    <div ref={ref} style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 300,
+      background: T.navGlass,
+      backdropFilter: T.blur, WebkitBackdropFilter: T.blur,
+      height: 64,
+      display: 'flex', alignItems: 'center', padding: '0 20px', gap: 12,
+      borderBottom: `1px solid ${T.border}`,
+      borderRadius: '0 0 22px 22px',
+      boxShadow: `inset 0 1px 0 ${T.innerHi}, ${T.navShadow}`,
+    }}>
+      <div onClick={() => setView('auth')} style={{ cursor: 'pointer' }}>
+        <LogoLockup />
+      </div>
+      <div style={{ flex: 1 }} />
+
+      {/* Nav links */}
+      <nav style={{ display: 'flex', gap: 28, marginRight: 6 }}>
+        {['Join Us', 'Donate', 'Contact'].map(l => (
+          <span key={l} style={{ color: T.text2, fontSize: 15, cursor: 'pointer', fontWeight: 400, transition: 'color .15s', letterSpacing: '.01em' }}
+            onMouseEnter={e => e.target.style.color = T.text1}
+            onMouseLeave={e => e.target.style.color = T.text2}
+          >{l}</span>
+        ))}
+      </nav>
+
+      {/* Search */}
+      <div style={{ position: 'relative' }}>
+        {searchOpen ? (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            background: T.inputGlass, backdropFilter: T.blur, WebkitBackdropFilter: T.blur,
+            border: `1px solid ${T.border}`, borderRadius: 22, padding: '9px 16px',
+            boxShadow: glassShadow(T),
+          }}>
+            <input autoFocus placeholder="Search" onBlur={() => setSearchOpen(false)}
+              style={{ background: 'transparent', border: 'none', color: T.text1, fontSize: 15, width: 190, fontFamily: 'Poppins,sans-serif' }}
+            />
+            <Ico d={P.search} fill={T.text2} size={18} />
+          </div>
+        ) : <SearchBtn />}
+      </div>
+
+      {/* Auth */}
+      <div style={{ position: 'relative' }}>
+        <AuthPill />
+
+        {/* Sign up dropdown */}
+        {signupOpen && (
+          <GlassSurface style={{ position: 'absolute', right: 0, top: 50, width: 310, padding: 26 }}>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+              <Btn onClick={() => { setView('signup-1'); setSignupOpen(false); }} style={{ flex: 1 }}>Sign up</Btn>
+              <Btn variant="ghost" onClick={() => { setView('login'); setSignupOpen(false); }} style={{ flex: 1 }}>Login</Btn>
+            </div>
+            <Divider label="or Continue via" />
+            <div style={{ marginTop: 20 }}><SocialRow /></div>
+          </GlassSurface>
+        )}
+
+        {/* Profile dropdown */}
+        {profileOpen && (
+          <GlassSurface style={{ position: 'absolute', right: 0, top: 50, width: 300, padding: 26 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+              <div style={{ width: 58, height: 58, borderRadius: '50%', background: T.inputGlass, border: '2.5px solid #2355E8', boxShadow: `0 0 0 4px ${T.blueGlow}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Ico d={P.user} fill={T.text2} size={26} />
+              </div>
+              <div>
+                <p style={{ color: T.text1, fontWeight: 600, fontSize: 16 }}>Muhammad Uzair</p>
+                <p style={{ color: T.text2, fontSize: 13, marginTop: 3 }}>Cybersecurity Engineer</p>
+                <span style={{ display: 'inline-block', marginTop: 7, background: T.chipGlass, color: T.text2, fontSize: 11, padding: '3px 12px', borderRadius: 14, fontWeight: 500, border: `1px solid ${T.border}` }}>Community Member</span>
+              </div>
+            </div>
+            {[{ d: P.shield, label: 'Achievements', sub: 'Level 2' }, { d: P.gear, label: 'Edit Profile', sub: '' }].map(({ d, label, sub }) => (
+              <button key={label} style={{ background: 'transparent', color: T.text2, fontSize: 15, display: 'flex', alignItems: 'center', gap: 14, padding: '11px 8px', borderRadius: 12, width: '100%', transition: 'color .15s' }}
+                onMouseEnter={e => e.currentTarget.style.color = T.text1}
+                onMouseLeave={e => e.currentTarget.style.color = T.text2}
+              >
+                <Ico d={d} fill={T.text3} size={20} />
+                <span>{label}</span>
+                {sub && <span style={{ color: T.text3, fontSize: 12, marginLeft: 4 }}>{sub}</span>}
+              </button>
+            ))}
+          </GlassSurface>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   SIDEBAR  — same 22px radius as card
+══════════════════════════════════════════════ */
+const NAV_ITEMS = [
+  { key: 'home',     d: P.home,     label: 'Home'     },
+  { key: 'team',     d: P.team,     label: 'Team'     },
+  { key: 'events',   d: P.events,   label: 'Events'   },
+  { key: 'articles', d: P.articles, label: 'Articles' },
+  { key: 'elearn',   d: P.elearn,   label: 'eLearn'   },
+  { key: 'projects', d: P.projects, label: 'Projects' },
+];
+
+function Sidebar({ expanded, setExpanded, active, setActive, darkMode, setDarkMode, onThemeToggle }) {
+  const T = useT();
+  const w = expanded ? 200 : 70;
+  return (
+    <div style={{ position: 'fixed', top: 80, left: 14, bottom: 14, display: 'flex', flexDirection: 'column', zIndex: 200 }}>
+      <div style={{
+        background: T.sideGlass,
+        backdropFilter: T.blur, WebkitBackdropFilter: T.blur,
+        borderRadius: 22, width: w,
+        transition: 'width .26s cubic-bezier(.4,0,.2,1)', overflow: 'hidden',
+        display: 'flex', flexDirection: 'column', flex: 1,
+        border: `1px solid ${T.border}`,
+        boxShadow: glassShadow(T, T.shadow),
+      }}>
+        {/* Nav items */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, padding: '14px 10px' }}>
+          {NAV_ITEMS.map(({ key, d, label }) => {
+            const isActive = active === key;
+            return (
+              <button key={key} onClick={() => setActive(key)} style={{
+                display: 'flex', alignItems: 'center',
+                gap: expanded ? 16 : 0,
+                padding: '13px 12px', borderRadius: 14,
+                justifyContent: expanded ? 'flex-start' : 'center',
+                width: '100%', background: 'transparent', transition: 'opacity .15s',
+              }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.opacity = '.7'; }}
+                onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+              >
+                {/* Active: blue icon; idle: gray icon — NO background */}
+                <Ico d={d} fill={isActive ? '#2355E8' : T.iconIdle} size={26} />
+                {expanded && (
+                  <span style={{ color: isActive ? '#2355E8' : T.text2, fontSize: 16, fontWeight: isActive ? 600 : 400, whiteSpace: 'nowrap' }}>
+                    {label}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Bottom controls */}
+        <div style={{ borderTop: `1px solid ${T.border}`, margin: '0 10px', paddingTop: 12, paddingBottom: 12 }}>
+          {/* Light / Dark toggle */}
+          <button onClick={onThemeToggle} style={{
+            display: 'flex', alignItems: 'center',
+            gap: expanded ? 16 : 0,
+            padding: '12px 12px', borderRadius: 14,
+            justifyContent: expanded ? 'flex-start' : 'center',
+            width: '100%', background: 'transparent', transition: 'opacity .15s',
+          }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '.7'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          >
+            <Ico d={darkMode ? P.sun : P.moon} fill={T.iconIdle} size={26} />
+            {expanded && <span style={{ color: T.text2, fontSize: 16, whiteSpace: 'nowrap' }}>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>}
+          </button>
+
+          {/* Single expand / collapse */}
+          <div style={{ marginTop: 8, display: 'flex', justifyContent: 'center' }}>
+            <button onClick={() => setExpanded(v => !v)} style={{
+              width: 46, height: 46, borderRadius: 14,
+              background: T.chipGlass, backdropFilter: T.blur, WebkitBackdropFilter: T.blur,
+              border: `1px solid ${T.border}`, boxShadow: glassShadow(T),
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'opacity .15s',
+            }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '.7'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            >
+              <Ico d={expanded ? P.close : P.menu} fill={T.iconIdle} size={22} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Logout orb */}
+      <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center' }}>
+        <button style={{
+          width: 50, height: 50, borderRadius: '50%',
+          background: T.sideGlass, backdropFilter: T.blur, WebkitBackdropFilter: T.blur,
+          border: `1px solid ${T.border}`, boxShadow: glassShadow(T),
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'opacity .15s',
+        }}
+          onMouseEnter={e => e.currentTarget.style.opacity = '.7'}
+          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+        >
+          <Ico d={P.logout} fill={T.iconIdle} size={22} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   COOKIE BANNER
+══════════════════════════════════════════════ */
+function CookieBanner({ onAccept, onLearn }) {
+  const T = useT();
+  return (
+    <div style={{
+      position: 'fixed', bottom: 32, left: '50%', transform: 'translateX(-50%)',
+      background: T.cardGlass, backdropFilter: T.blur, WebkitBackdropFilter: T.blur,
+      borderRadius: 40, padding: '15px 24px',
+      display: 'flex', alignItems: 'center', gap: 14,
+      zIndex: 400, border: `1px solid ${T.border}`,
+      boxShadow: glassShadow(T, T.shadow), whiteSpace: 'nowrap',
+    }}>
+      <span style={{ color: T.text1, fontSize: 16, fontWeight: 500 }}>Essential Cookies</span>
+      <Btn onClick={onAccept} style={{ padding: '10px 24px', fontSize: 15 }}>Accept</Btn>
+      <Btn variant="ghost" onClick={onLearn} style={{ padding: '10px 24px', fontSize: 15 }}>Learn More</Btn>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   HOME SHELL
+══════════════════════════════════════════════ */
+function HomeShell({ isLoggedIn, setView, darkMode, setDarkMode, onThemeToggle }) {
+  const T = useT();
+  const [expanded, setExpanded] = useState(false);
+  const [active, setActive] = useState('home');
+  const [cookies, setCookies] = useState(true);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [signupOpen, setSignupOpen] = useState(false);
+  return (
+    <div style={{ minHeight: '100vh', background: T.bg }}>
+      <NavBar setView={setView}
+        searchOpen={searchOpen} setSearchOpen={setSearchOpen}
+        profileOpen={profileOpen} setProfileOpen={setProfileOpen}
+        signupOpen={signupOpen} setSignupOpen={setSignupOpen}
+        isLoggedIn={isLoggedIn}
+      />
+      <Sidebar expanded={expanded} setExpanded={setExpanded}
+        active={active} setActive={setActive}
+        darkMode={darkMode} setDarkMode={setDarkMode}
+        onThemeToggle={onThemeToggle}
+      />
+      {cookies && <CookieBanner onAccept={() => setCookies(false)} onLearn={() => setCookies(false)} />}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
+   ROOT
+══════════════════════════════════════════════ */
+function App() {
+  const [view, setView]       = useState('auth');
+  const [darkMode, setDarkMode] = useState(true);
+  const [ripple, setRipple]   = useState(null);
+  const theme = mkTheme(darkMode);
+
+  const onThemeToggle = useCallback(() => {
+    /* spawn ripple from sidebar area */
+    const x = 35, y = window.innerHeight - 120;
+    setRipple({ id: Date.now(), x, y, color: darkMode ? LIGHT_RIPPLE : DARK_RIPPLE });
+    setTimeout(() => { setDarkMode(v => !v); setRipple(null); }, 310);
+  }, [darkMode]);
+
+  const DARK_RIPPLE = '#0a0a1a';
+  const LIGHT_RIPPLE = '#eaeaf8';
+
+  const shell = (loggedIn) => (
+    <HomeShell isLoggedIn={loggedIn} setView={setView}
+      darkMode={darkMode} setDarkMode={setDarkMode}
+      onThemeToggle={onThemeToggle}
+    />
+  );
+
+  const screens = {
+    'auth':          <AuthPage    setView={setView} />,
+    'login':         <LoginPage   setView={setView} />,
+    'signup-1':      <SignUp1     setView={setView} />,
+    'signup-2':      <SignUp2     setView={setView} />,
+    'signup-3':      <SignUp3     setView={setView} />,
+    'signup-4':      <SignUp4     setView={setView} />,
+    'success':       <SuccessPage setView={setView} />,
+    'home':          shell(false),
+    'home-loggedin': shell(true),
+  };
+
+  return (
+    <ThemeCtx.Provider value={theme}>
+      <div style={{ position: 'relative', minHeight: '100vh' }}>
+        {screens[view] ?? screens['auth']}
+        {/* Mode ripple overlay */}
+        {ripple && (
+          <div key={ripple.id} className="mode-ripple" style={{
+            left: ripple.x, top: ripple.y,
+            background: darkMode ? '#d8d8f0' : '#0a0a18',
+          }} />
+        )}
+      </div>
+    </ThemeCtx.Provider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
