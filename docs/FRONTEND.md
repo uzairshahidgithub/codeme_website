@@ -1,6 +1,6 @@
 # Frontend Architecture & Standards
 
-**Last Updated:** 2026-04-26
+**Last Updated:** 2026-05-16
 
 ## Stack
 
@@ -158,16 +158,23 @@ When implementing any component requiring an icon or asset:
 * **Local Storage:** Keys must be prefixed with `codemo.<feature>.<key>`.
 * **Session Storage:** Strictly for in-flow drafts (e.g., preserving signup step data).
 
-## API Client
+## Data Access Pattern
 
-* Located in `lib/api/`.
-* Wraps every request with:
-  * Authentication headers.
-  * CSRF tokens.
-  * Request nonces.
-  * Timestamps.
-* Automatically encrypts the payload envelope for sensitive endpoints (login, signup, password change).
-* Verifies response signatures for auth-state endpoints to prevent tampering.
+All data access goes through Supabase — there is no separate API server (see [ADR-0008](adr/0008-drop-railway-supabase-only.md)).
+
+| Context | Client | Location |
+|---|---|---|
+| Server Components / Route Handlers | `createClient()` from `@/lib/supabase/server` | Cookie-based session, full RLS |
+| Client Components | `createClient()` from `@/lib/supabase/client` | Cookie-based session, full RLS |
+| Public cached queries (no auth) | `createPublicClient()` from `@/lib/supabase/public` | Anon key only, safe inside `unstable_cache` |
+| Admin Edge Functions | Service role key via Supabase Edge Function secrets | Never on the frontend |
+
+**Rules:**
+* Never import the service role key into `frontend/`. It belongs exclusively in Edge Functions.
+* Never call `process.env.SUPABASE_SERVICE_ROLE_KEY` from any file under `frontend/`.
+* Use `unstable_cache` on all public server-side queries. Set TTL per data volatility: events 60s, courses 300s, testimonials 600s, founder message 3600s.
+* Mutations from Client Components call Next.js Route Handlers under `app/api/`. Route Handlers use the server client (cookie session) so RLS applies automatically.
+* All sensitive route handlers validate the incoming body manually (type guard pattern) — Zod schemas for shared contracts live in `lib/schemas/`.
 
 ## Future Recommendations and Free Resources
 
