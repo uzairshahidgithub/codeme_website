@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation'
 import { SignupDropdown } from './SignupDropdown'
 import { ProfileDropdown } from './ProfileDropdown'
 import { CodemoLogo } from '@/components/ui/CodemoLogo'
+import { EditProfileDrawer } from '@/components/profile/EditProfileDrawer'
+import { SettingsDrawer } from '@/components/profile/SettingsDrawer'
 
 interface NavbarUser {
   firstName: string
@@ -79,6 +81,8 @@ export function Navbar({ isAuthenticated, user }: NavbarProps) {
   const router = useRouter()
   const [searchOpen, setSearchOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [editProfileOpen, setEditProfileOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // Separate refs for desktop and mobile to avoid conflicts
   const searchWrapperRef = useRef<HTMLDivElement>(null)
@@ -307,6 +311,8 @@ export function Navbar({ isAuthenticated, user }: NavbarProps) {
                 <ProfileDropdown
                   user={user}
                   onClose={() => setDropdownOpen(false)}
+                  onEditProfile={() => setEditProfileOpen(true)}
+                  onSettings={() => setSettingsOpen(true)}
                 />
               ) : (
                 <SignupDropdown onClose={() => setDropdownOpen(false)} />
@@ -396,6 +402,17 @@ export function Navbar({ isAuthenticated, user }: NavbarProps) {
           </div>
         </div>
       )}
+
+      {/* Drawers — portal to document.body via Drawer primitive */}
+      <EditProfileDrawer
+        open={editProfileOpen}
+        onClose={() => setEditProfileOpen(false)}
+      />
+      <SettingsDrawer
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onEditProfile={() => { setSettingsOpen(false); setEditProfileOpen(true) }}
+      />
     </>
   )
 }

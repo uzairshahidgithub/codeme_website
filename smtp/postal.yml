@@ -1,0 +1,74 @@
+# Postal v3 main configuration
+# Mounted into every Postal container at /config/postal.yml.
+# Reference: https://docs.postalserver.io/getting-started/configuration
+
+version: 2
+
+postal:
+  # Hostname Postal serves the web UI on. nginx on the host proxies this.
+  web_hostname: postal.codemoteam.org
+  # Hostname the SMTP server identifies itself as (must match A/MX record + DNS PTR).
+  smtp_hostname: mail.codemoteam.org
+  # Force HTTPS for the web UI.
+  use_ip_pools: false
+
+web_server:
+  bind_address: 0.0.0.0
+  port: 5000
+
+# Primary database (Postal metadata)
+main_db:
+  host: postal-mariadb
+  port: 3306
+  username: postal
+  password: REPLACE_AT_RUNTIME_VIA_ENV   # overridden by env file
+  database: postal
+
+# Per-server message databases — Postal creates one schema per provisioned server
+message_db:
+  host: postal-mariadb
+  port: 3306
+  username: postal
+  password: REPLACE_AT_RUNTIME_VIA_ENV
+  prefix: postal-messages
+
+# Background queue / rate-limit store
+redis:
+  host: postal-redis
+  port: 6379
+  database: 0
+
+# Outbound SMTP (Postal sending mail to recipients on the internet)
+smtp_server:
+  port: 25
+  tls_enabled: true
+  tls_certificate_path: /etc/letsencrypt/live/mail.codemoteam.org/fullchain.pem
+  tls_private_key_path: /etc/letsencrypt/live/mail.codemoteam.org/privkey.pem
+
+# Submission ports for authenticated relay (Edge Function → Postal)
+smtp_submission:
+  port: 587
+  tls_enabled: true
+  starttls: true
+  tls_certificate_path: /etc/letsencrypt/live/mail.codemoteam.org/fullchain.pem
+  tls_private_key_path: /etc/letsencrypt/live/mail.codemoteam.org/privkey.pem
+
+# Postal's signing identity. Generate via Postal admin UI on first boot,
+# then add the public key to Cloudflare DNS (see dns-records.md).
+dns:
+  mx_records:
+    - mail.codemoteam.org
+  spf_include: spf.codemoteam.org
+  return_path_domain: rp.codemoteam.org
+  route_domain: routes.codemoteam.org
+  track_domain: track.codemoteam.org
+
+# Reasonable defaults for a single small-traffic VM (Oracle Always-Free has 1-4 OCPU).
+workers:
+  default_threads: 4
+  default_processes: 2
+
+# Logging — JSON to stdout so Docker/journald can collect it.
+logging:
+  rails_log_enabled: false
+  graceful_logging_enabled: true

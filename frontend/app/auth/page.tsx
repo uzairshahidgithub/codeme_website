@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { signIn } from 'next-auth/react'
 import { z } from 'zod'
+import { createClient } from '@/lib/supabase/client'
 import { emailSchema } from '@/lib/validations/auth'
 import { useSignupStore } from '@/stores/signup'
 import { Input } from '@/components/ui/Input'
@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/Button'
 import { SocialButton } from '@/components/ui/SocialButton'
 
 type FormData = z.infer<typeof emailSchema>
+
+type Provider = 'google' | 'github'
 
 export default function AuthDefaultPage() {
   const router = useRouter()
@@ -40,7 +42,7 @@ export default function AuthDefaultPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: data.email }),
       })
-      const json = await res.json() as { exists: boolean }
+      const json = (await res.json()) as { exists: boolean }
       router.push(json.exists ? '/auth/login' : '/auth/signup')
     } catch {
       setServerError('Something went wrong. Please try again.')
@@ -55,12 +57,20 @@ export default function AuthDefaultPage() {
     router.push('/auth/signup')
   }
 
+  async function signInWithProvider(provider: Provider) {
+    const supabase = createClient()
+    await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+  }
+
   return (
     <>
       {/* Card */}
-      <div
-        className="auth-glass-card rounded-2xl w-[calc(100%-64px)] lg:w-full max-w-[320px] lg:max-w-[420px] p-4 lg:p-8"
-      >
+      <div className="auth-glass-card rounded-2xl w-[calc(100%-64px)] lg:w-full max-w-[320px] lg:max-w-[420px] p-4 lg:p-8">
         {/* Email input */}
         <Input
           id="email"
@@ -95,23 +105,21 @@ export default function AuthDefaultPage() {
 
         {/* Social providers */}
         <div className="flex justify-center gap-6 mt-5">
-          <SocialButton
-            provider="google"
-            onClick={() => signIn('google', { callbackUrl: '/' })}
-          />
-          <SocialButton
-            provider="apple"
-            onClick={() => signIn('apple', { callbackUrl: '/' })}
-          />
-          <SocialButton
-            provider="microsoft"
-            onClick={() => signIn('azure-ad', { callbackUrl: '/' })}
-          />
+          <SocialButton provider="google" onClick={() => signInWithProvider('google')} />
+          <SocialButton provider="github" onClick={() => signInWithProvider('github')} />
         </div>
 
         {/* Privacy Policy */}
         <div className="mt-6 text-center text-[12px] text-text-tertiary">
-          By continuing, you agree to Codemo&apos;s <a href="#" className="underline hover:text-text-primary transition-colors">Terms of Service</a> and <a href="#" className="underline hover:text-text-primary transition-colors">Privacy Policy</a>.
+          By continuing, you agree to Codemo&apos;s{' '}
+          <a href="#" className="underline hover:text-text-primary transition-colors">
+            Terms of Service
+          </a>{' '}
+          and{' '}
+          <a href="#" className="underline hover:text-text-primary transition-colors">
+            Privacy Policy
+          </a>
+          .
         </div>
       </div>
     </>

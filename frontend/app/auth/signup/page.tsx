@@ -71,13 +71,15 @@ export default function SignupStep1Page() {
       <div
         className="auth-glass-card rounded-2xl w-[calc(100%-64px)] lg:w-full max-w-[320px] lg:max-w-[420px] p-4 lg:p-8 flex flex-col"
       >
-        {/* Email */}
+        {/* Email — read-only when pre-filled from the email-check step */}
         <Input
           id="email"
           type="email"
           placeholder="Enter Email"
           autoComplete="email"
+          readOnly={!!draft.email}
           error={errors.email?.message}
+          style={draft.email ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}
           {...register('email')}
         />
 

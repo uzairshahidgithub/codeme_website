@@ -45,7 +45,7 @@
   "--dev-input-glass-dark": "rgba(255, 255, 255, 0.05)",
   "--dev-input-glass-light": "rgba(255, 255, 255, 0.50)",
   "--auth-quote-size": "38px",
-  "--auth-quote-weight": "0",
+  "--auth-quote-weight": "300",
   "--auth-quote-top": "24%",
   "--auth-quote-size-mob": "0px",
   "--auth-quote-weight-mob": "300",

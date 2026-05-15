@@ -1,0 +1,11 @@
+-- =============================================================================
+-- Seed data for local development only.
+-- Run via: supabase db reset (which applies migrations then this file)
+-- =============================================================================
+
+-- No seed data required for MVP — profiles are created automatically via
+-- the handle_new_user() trigger when Supabase Auth creates a user.
+--
+-- To create a test user locally, use the Supabase Studio UI at
+-- http://localhost:54323 or the supabase CLI:
+--   supabase auth create-user --email test@example.com --password testpassword123

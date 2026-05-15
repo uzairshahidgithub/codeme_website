@@ -10,10 +10,9 @@ import { cn } from '@/lib/utils'
 
 const navItems = [
   { id: 'home', label: 'Home', icon: '/icons/Home (Default).svg', href: '/' },
-  { id: 'team', label: 'Team', icon: '/icons/Teams (Default).svg', href: '/team' },
   { id: 'events', label: 'Events', icon: '/icons/Events (Default).svg', href: '/events' },
   { id: 'articles', label: 'Articles', icon: '/icons/Articles (Default).svg', href: '/articles' },
-  { id: 'elearn', label: 'eLearn', icon: '/icons/eLearn (Default).svg', href: '/elearn' },
+  { id: 'eduto', label: 'Eduto', icon: '/icons/Eduto (Default).svg', href: '/eduto' },
   { id: 'projects', label: 'Projects', icon: '/icons/Projects (Default).svg', href: '/projects' },
 ]
 
@@ -119,7 +118,8 @@ export function Sidebar() {
                 {!isExpanded && (
                   <span
                     role="tooltip"
-                    className="absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 bg-bg-surface border border-white/10 text-text-primary text-caption px-3 py-1.5 rounded-[8px] whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-md z-50"
+                    className="absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 text-text-primary text-caption px-3 py-1.5 rounded-[8px] whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-md z-50"
+                    style={{ background: 'var(--card-glass)', border: '1px solid var(--border)' }}
                   >
                     {item.label}
                   </span>

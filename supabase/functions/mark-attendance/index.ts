@@ -1,0 +1,50 @@
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
+import { corsHeaders, envelope, requireAdmin, audit } from '../_shared/admin.ts'
+
+const bodySchema = z.object({
+  event_id: z.string().uuid(),
+  user_ids: z.array(z.string().uuid()).min(1).max(500),
+  attended: z.boolean(),
+})
+
+serve(async (req) => {
+  const origin = req.headers.get('origin') ?? ''
+
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders(origin) })
+  }
+  if (req.method !== 'POST') {
+    return envelope(origin, 405, null, 'Method not allowed')
+  }
+
+  const auth = await requireAdmin(req, origin, 'admin')
+  if (!auth.ok) return auth.response
+
+  let body: unknown
+  try { body = await req.json() } catch { return envelope(origin, 400, null, 'Invalid JSON') }
+
+  const parsed = bodySchema.safeParse(body)
+  if (!parsed.success) {
+    return envelope(origin, 422, null, 'Validation failed', { fields: parsed.error.flatten().fieldErrors })
+  }
+
+  const { event_id, user_ids, attended } = parsed.data
+
+  const { error, count } = await auth.serviceClient
+    .from('event_registrations')
+    .update({ attended }, { count: 'exact' })
+    .eq('event_id', event_id)
+    .in('user_id', user_ids)
+
+  if (error) {
+    console.error('mark-attendance: update failed', error)
+    return envelope(origin, 500, null, 'Failed to update attendance')
+  }
+
+  await audit(auth.serviceClient, auth.userId, 'event.attendance_marked', {
+    event_id, user_ids, attended, updated: count ?? 0,
+  })
+
+  return envelope(origin, 200, { updated: count ?? 0 }, null)
+})

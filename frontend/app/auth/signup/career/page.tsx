@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { createClient } from '@/lib/supabase/client'
 import { signupStep3Schema } from '@/lib/validations/auth'
 import { useSignupStore } from '@/stores/signup'
 import { Chip } from '@/components/ui/Chip'
@@ -32,7 +33,6 @@ const DOMAINS = [
 
 const STATUSES = ['Freelancer', 'Student', 'Employed', 'Unemployed', 'Business Owner'] as const
 
-/** Custom glass dropdown to replace native datalist */
 function DomainSelect({
   value,
   onChange,
@@ -46,9 +46,7 @@ function DomainSelect({
   const [query, setQuery] = useState(value ?? '')
   const wrapperRef = useRef<HTMLDivElement>(null)
 
-  const filtered = DOMAINS.filter((d) =>
-    d.toLowerCase().includes(query.toLowerCase())
-  )
+  const filtered = DOMAINS.filter((d) => d.toLowerCase().includes(query.toLowerCase()))
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -62,7 +60,6 @@ function DomainSelect({
 
   return (
     <div ref={wrapperRef} className="relative">
-      {/* Input */}
       <div
         className="relative flex items-center h-14 rounded-[14px] cursor-text"
         style={{
@@ -71,7 +68,7 @@ function DomainSelect({
           backdropFilter: 'var(--blur)',
           WebkitBackdropFilter: 'var(--blur)',
         }}
-        onClick={() => { setOpen(true) }}
+        onClick={() => setOpen(true)}
       >
         <input
           type="text"
@@ -86,18 +83,22 @@ function DomainSelect({
           className="w-full h-full bg-transparent px-5 text-text-primary placeholder:text-text-tertiary outline-none text-body font-sans caret-accent-primary"
           style={{ fontSize: '16px' }}
         />
-        {/* Chevron */}
         <svg
           className={cn('mr-4 shrink-0 transition-transform duration-200', open && 'rotate-180')}
-          width="18" height="18" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
           style={{ color: 'var(--text3)' }}
         >
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </div>
 
-      {/* Dropdown list */}
       {open && filtered.length > 0 && (
         <div
           className="absolute left-0 right-0 mt-2 z-50 rounded-[14px] overflow-hidden overflow-y-auto max-h-[220px] py-1"
@@ -143,6 +144,17 @@ export default function SignupStep3Page() {
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState('')
 
+  // Guard: steps 1 and 2 must be complete before arriving here.
+  useEffect(() => {
+    if (!draft.email || !draft.password) {
+      router.replace('/auth/signup')
+      return
+    }
+    if (!draft.username || !draft.gender || !draft.dob.yyyy) {
+      router.replace('/auth/signup/details')
+    }
+  }, [draft.email, draft.password, draft.username, draft.gender, draft.dob.yyyy, router])
+
   const {
     handleSubmit,
     setValue,
@@ -156,44 +168,51 @@ export default function SignupStep3Page() {
   const status = watch('status')
   const domain = watch('domain', '')
 
-  async function sendCode(): Promise<boolean> {
-    try {
-      const { draft } = useSignupStore.getState()
-      const res = await fetch('/api/auth/resend', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: draft.email }),
-      })
-
-      if (!res.ok) {
-        const text = await res.text()
-        let msg = 'Failed to send verification code'
-        try { msg = JSON.parse(text).error ?? msg } catch {}
-        setSendError(msg)
-        return false
-      }
-      return true
-    } catch (e) {
-      setSendError('Network error. Please check your connection.')
-      return false
-    }
-  }
-
   async function onSubmit(data: FormData) {
     setSendError('')
     setSending(true)
     setDomain(data.domain)
     setStatus(data.status)
-    const ok = await sendCode()
+
+    const { draft: current } = useSignupStore.getState()
+
+    const supabase = createClient()
+    const { error } = await supabase.auth.signUp({
+      email: current.email,
+      password: current.password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: {
+          signup_flow: 'email',
+          profile_complete: true,
+          username: current.username,
+          first_name: current.username,
+          dob: `${current.dob.yyyy}-${current.dob.mm.padStart(2, '0')}-${current.dob.dd.padStart(2, '0')}`,
+          gender: current.gender,
+          domain: data.domain,
+          status: data.status,
+        },
+      },
+    })
+
     setSending(false)
-    if (ok) router.push('/auth/signup/verify')
+
+    if (error) {
+      setSendError(error.message)
+      return
+    }
+
+    // TEMPORARY: email confirmation is disabled until SMTP is configured
+    // (See supabase/config.toml [auth.email]). signUp() returns a live session
+    // immediately, so we can skip /auth/signup/verify and land on the success
+    // screen. Restore the verify route once email confirmation is re-enabled.
+    router.refresh()
+    router.replace('/auth/signup/success')
   }
 
   return (
     <>
-      <div
-        className="glass-card rounded-[22px] w-[calc(100%-64px)] lg:w-full max-w-[340px] lg:max-w-[420px] p-4 lg:p-8"
-      >
+      <div className="glass-card rounded-[22px] w-[calc(100%-64px)] lg:w-full max-w-[340px] lg:max-w-[420px] p-4 lg:p-8">
         {/* Domain */}
         <label
           className="block text-text-primary mb-3"
@@ -232,9 +251,10 @@ export default function SignupStep3Page() {
           )}
         </fieldset>
 
-        {/* Error */}
         {sendError && (
-          <p className="mt-4 text-center text-sm" style={{ color: '#ff5c5c' }}>{sendError}</p>
+          <p className="mt-4 text-center text-sm" style={{ color: '#ff5c5c' }}>
+            {sendError}
+          </p>
         )}
 
         {/* Continue */}

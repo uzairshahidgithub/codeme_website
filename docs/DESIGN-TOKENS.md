@@ -64,6 +64,42 @@
 | `label` | 12px | 1.4 | 500 | 0.05em (uppercase) |
 | `caption` | 12px | 1.4 | 400 | normal |
 
+## External Asset Theme Compliance
+
+Any icon, illustration or asset pulled in via Tier 2 of the [Icon and Asset Resolution Strategy](FRONTEND.md#icon-and-asset-resolution-strategy) must comply with Codemo design tokens. Hardcoded hex colours are forbidden regardless of source.
+
+### Icon sizing scale (by context)
+
+| Context | Size | Stroke width | Example |
+|---|---|---|---|
+| Inline (within text body) | 16px | 1.5 | `<Icon size={16} strokeWidth={1.5} />` |
+| Action rows / list rows | 20px | 1.5 | `<Icon size={20} strokeWidth={1.5} />` |
+| Buttons / sidebar nav | 24px | 1.5 | `<Icon size={24} strokeWidth={1.5} />` |
+| Hero / featured visuals | 28px | 1.5 | `<Icon size={28} strokeWidth={1.5} />` |
+
+### Colour rules
+
+* **Always** colour via `currentColor` or a CSS variable: `text-[var(--text-tertiary)]`, `text-[var(--accent-primary)]`, etc.
+* **Never** apply colour via inline `style={{ color: '#...' }}` or hardcoded Tailwind hex utilities.
+* Active state uses `var(--accent-primary)`. Default state uses `var(--text-tertiary)`. Hover lifts to `var(--text-primary)`.
+* External SVGs must have `fill` and `stroke` attributes stripped from source and replaced with `currentColor` or `var(--token)` before commit.
+
+### Container rules
+
+* Wrap external SVG assets in a sized container (explicit width and height) — never relying on intrinsic SVG dimensions.
+* Test in both dark and light theme before committing.
+
+### 3D and texture assets
+
+* Lighting rig: `AmbientLight 0.4` · `DirectionalLight` (sun) · `PointLight #2D7FF9` (rim, sourced from `var(--accent-primary)`).
+* Canvas background transparent — page background shows through.
+* Postprocessing Bloom defaults: `luminanceThreshold 0.2` · `intensity 0.4`.
+
+### Illustration recolouring
+
+* unDraw exports: set primary colour to `#2D7FF9` (matches `var(--accent-primary)`) before download.
+* Storyset / Humaaans: customise to match dark background, remove white backgrounds, scale to container.
+
 ## Token JSON Schema
 
 * **Reference:** `/config/tokens.default.json`

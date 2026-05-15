@@ -95,7 +95,7 @@
 * **Symptom:** Users cannot receive confirmation or password reset emails.
 * **Diagnostic Steps:**
   1. Check the Supabase Auth email logs.
-  2. Check the SMTP provider dashboard (e.g., Resend, SendGrid) for bounces or spam flags.
+  2. Check the Postal admin UI (`postal.codemoteam.org` → Server → Messages) for queued, bounced, or held messages.
 * **Resolution Steps:**
   1. Verify domain DKIM, SPF, and DMARC records in Cloudflare.
   2. Rotate SMTP credentials if suspected compromised.
@@ -117,7 +117,7 @@
 
 * **Symptom:** Scheduled calendar alert 30 days prior to expiration.
 * **Diagnostic Steps:**
-  1. Check Namecheap dashboard for expiration date of `codemoteams.com`.
+  1. Check Namecheap dashboard for expiration date of `codemoteam.org`.
 * **Resolution Steps:**
   1. Ensure the corporate credit card on file is valid.
   2. Process renewal manually if auto-renew is disabled or fails.

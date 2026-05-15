@@ -5,3 +5,16 @@ node_modules
 .env.local
 .vercel
 dist
+
+# Edge Function and SMTP secrets — only their .example siblings are committed
+supabase/functions/.env
+supabase/.smtp.env
+smtp/.env
+
+# Earth textures — large binaries, sourced from Codemo Assets/59-earth/textures/
+# Copy via: bash frontend/scripts/copy-earth-textures.sh
+frontend/public/textures/
+
+# Supabase CLI artifacts
+supabase/.branches
+supabase/.temp

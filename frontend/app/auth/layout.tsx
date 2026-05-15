@@ -29,7 +29,7 @@ function AuthDesktopLogo() {
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative min-h-screen w-full bg-bg-base overflow-hidden">
+    <div className="relative h-screen w-full bg-bg-base overflow-y-auto overflow-x-hidden">
       <style>{`
 
         /* ══════════════════════════════════════════

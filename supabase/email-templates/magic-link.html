@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<title>Your Codemo sign-in link</title>
+</head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;color:#f0f0f0;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#0a0a0a;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="520" style="max-width:520px;background:#181818;border:1px solid rgba(255,255,255,0.08);border-radius:14px;overflow:hidden;">
+          <tr>
+            <td style="padding:32px 32px 8px 32px;">
+              <div style="font-size:18px;font-weight:700;color:#ffffff;letter-spacing:0.4px;">Codemo Teams</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:8px 32px 0 32px;">
+              <h1 style="margin:0;font-size:22px;font-weight:600;color:#ffffff;line-height:1.3;">Sign in to Codemo</h1>
+              <p style="margin:14px 0 0 0;font-size:14px;line-height:1.6;color:#b8b8b8;">
+                Click the button below to sign in to your Codemo account. This link is good for one sign-in only.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 32px 8px 32px;" align="left">
+              <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 24px;background:#1a48fe;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;border-radius:10px;">
+                Sign in to Codemo
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 32px 0 32px;">
+              <p style="margin:0;font-size:12px;line-height:1.6;color:#787878;">
+                Or paste this link into your browser:<br>
+                <a href="{{ .ConfirmationURL }}" style="color:#5b86ff;word-break:break-all;text-decoration:none;">{{ .ConfirmationURL }}</a>
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px 32px 32px 32px;">
+              <p style="margin:0;font-size:12px;line-height:1.6;color:#787878;">
+                This link expires in 1 hour. If you didn't request a sign-in link you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 32px 24px 32px;border-top:1px solid rgba(255,255,255,0.08);">
+              <p style="margin:20px 0 0 0;font-size:11px;line-height:1.5;color:#5a5a5a;">
+                Codemo Teams · noreply@codemoteam.org
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

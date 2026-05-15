@@ -37,6 +37,9 @@ const config: Config = {
         md: '0 4px 12px rgba(0,0,0,0.4)',
         lg: '0 8px 24px rgba(0,0,0,0.5)',
         'glow-blue': '0 0 24px rgba(45,127,249,0.25)',
+        'brand-glow': '0 0 20px rgba(45,127,249,0.30)',
+        'success-glow': '0 0 20px rgba(16,185,129,0.20)',
+        'danger-glow': '0 0 20px rgba(239,68,68,0.25)',
       },
       fontFamily: {
         sans: ['var(--font-poppins)', 'sans-serif'],
@@ -62,6 +65,11 @@ const config: Config = {
         '18': '72px',
         '22': '88px',
         '24': '96px',
+        'icon-container': '40px',
+      },
+      letterSpacing: {
+        tightest: '-0.02em',
+        widestest: '0.22em',
       },
       transitionDuration: {
         '220': '220ms',

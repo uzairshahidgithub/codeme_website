@@ -1,0 +1,82 @@
+name: codemo-postal
+
+# Postal v3 — full SMTP stack on a single Oracle Cloud Always-Free VM.
+# Runs four Postal processes (runner, web, smtp, worker) plus MariaDB and Redis.
+# TLS for the public web UI is terminated by host nginx + Certbot (see setup-guide.md).
+# Postal's SMTP server (port 25/587/465) is exposed directly; STARTTLS uses certs
+# mounted from /etc/letsencrypt on the host.
+
+services:
+  postal-runner:
+    image: ghcr.io/postalserver/postal:3
+    command: ["postal", "run"]
+    restart: unless-stopped
+    depends_on: [postal-mariadb, postal-redis]
+    env_file: [.env]
+    volumes:
+      - ./postal.yml:/config/postal.yml:ro
+      - postal-assets:/opt/postal/app/assets
+
+  postal-web:
+    image: ghcr.io/postalserver/postal:3
+    command: ["postal", "web-server"]
+    restart: unless-stopped
+    depends_on: [postal-mariadb, postal-redis]
+    env_file: [.env]
+    ports:
+      - "127.0.0.1:5000:5000"   # exposed to host nginx only, not 0.0.0.0
+    volumes:
+      - ./postal.yml:/config/postal.yml:ro
+
+  postal-smtp:
+    image: ghcr.io/postalserver/postal:3
+    command: ["postal", "smtp-server"]
+    restart: unless-stopped
+    depends_on: [postal-mariadb, postal-redis]
+    env_file: [.env]
+    ports:
+      - "25:25"
+      - "587:587"
+      - "465:465"
+    volumes:
+      - ./postal.yml:/config/postal.yml:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+
+  postal-worker:
+    image: ghcr.io/postalserver/postal:3
+    command: ["postal", "worker"]
+    restart: unless-stopped
+    depends_on: [postal-mariadb, postal-redis]
+    env_file: [.env]
+    volumes:
+      - ./postal.yml:/config/postal.yml:ro
+
+  postal-mariadb:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      retries: 5
+
+  postal-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 5
+
+volumes:
+  mariadb-data:
+  redis-data:
+  postal-assets:

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
 const schema = z.object({ email: z.string().email() })
@@ -12,11 +12,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ exists: false }, { status: 400 })
   }
 
-  const existing = await db.user.findUnique({
-    where: { email: parsed.data.email },
-    select: { id: true },
-  })
+  const supabase = createAdminClient()
+  const { data } = await supabase.auth.admin.listUsers()
 
-  // Always return 200 — never reveal whether an email exists in a different response code
-  return NextResponse.json({ exists: !!existing })
+  const exists = (data?.users ?? []).some(
+    (u) => u.email?.toLowerCase() === parsed.data.email.toLowerCase(),
+  )
+
+  // Always 200 — never leak user existence via HTTP status codes
+  return NextResponse.json({ exists })
 }

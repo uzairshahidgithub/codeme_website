@@ -1,13 +1,17 @@
 import { ButtonHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 
+// Provider keys match Supabase Auth's `signInWithOAuth({ provider })` argument.
+export type SocialProvider = 'google' | 'github'
+
 interface SocialButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  provider: 'google' | 'apple' | 'microsoft'
+  provider: SocialProvider
 }
 
+// Multi-colour Google mark — brand guideline says no recolour, fine on any background.
 function GoogleIcon() {
   return (
-    <svg width="32" height="32" viewBox="0 0 24 24" aria-hidden="true">
+    <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">
       <path
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
         fill="#4285F4"
@@ -28,38 +32,25 @@ function GoogleIcon() {
   )
 }
 
-function AppleIcon() {
+// Monochrome — uses currentColor so the button's `color` (var(--text1)) drives the fill.
+// In dark mode --text1 is light, in light mode --text1 is near-black, so the icon
+// always contrasts against the theme-matching button surface.
+function GitHubIcon() {
   return (
-    <svg width="32" height="32" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"
-        fill="#ffffff"
-      />
+    <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+      <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0 0 22 12.017C22 6.484 17.522 2 12 2z" />
     </svg>
   )
 }
 
-function MicrosoftIcon() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="1" y="1" width="10" height="10" fill="#F25022" />
-      <rect x="13" y="1" width="10" height="10" fill="#7FBA00" />
-      <rect x="1" y="13" width="10" height="10" fill="#00A4EF" />
-      <rect x="13" y="13" width="10" height="10" fill="#FFB900" />
-    </svg>
-  )
-}
-
-const providerIcons = {
+const providerIcons: Record<SocialProvider, React.ReactNode> = {
   google: <GoogleIcon />,
-  apple: <AppleIcon />,
-  microsoft: <MicrosoftIcon />,
+  github: <GitHubIcon />,
 }
 
-const providerLabels = {
+const providerLabels: Record<SocialProvider, string> = {
   google: 'Continue with Google',
-  apple: 'Continue with Apple',
-  microsoft: 'Continue with Microsoft',
+  github: 'Continue with GitHub',
 }
 
 export function SocialButton({ provider, className, ...props }: SocialButtonProps) {
@@ -68,15 +59,17 @@ export function SocialButton({ provider, className, ...props }: SocialButtonProp
       type="button"
       aria-label={providerLabels[provider]}
       className={cn(
-        'w-[52px] h-[52px] rounded-full flex items-center justify-center transition-all duration-150 hover:brightness-110 hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary',
+        'w-[56px] h-[56px] rounded-full flex items-center justify-center transition-all duration-150 hover:brightness-110 hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary',
         className,
       )}
       style={{
-        background: 'rgba(255,255,255,0.06)',
-        border: '1.5px solid rgba(255,255,255,0.13)',
+        background: 'var(--card-glass)',
+        border: '1px solid var(--border)',
         boxShadow: '0 0 0 3px var(--ring), inset 0 1px 0 var(--inner-hi)',
+        // GitHub's mark inherits this via fill="currentColor" — inverts per theme.
+        color: 'var(--text1)',
         backdropFilter: 'var(--blur)',
-        WebkitBackdropFilter: 'var(--blur)'
+        WebkitBackdropFilter: 'var(--blur)',
       }}
       {...props}
     >

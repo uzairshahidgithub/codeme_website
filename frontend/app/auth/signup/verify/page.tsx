@@ -1,182 +1,98 @@
 'use client'
 
-import { useRef, useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import ReCAPTCHA from 'react-google-recaptcha'
-import { z } from 'zod'
-import { verifyCodeSchema } from '@/lib/validations/auth'
+import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { useSignupStore } from '@/stores/signup'
 import { Button } from '@/components/ui/Button'
 
-type FormData = z.infer<typeof verifyCodeSchema>
-
 export default function SignupVerifyPage() {
-  const router = useRouter()
-  const { draft, clearDraft } = useSignupStore()
-  const recaptchaRef = useRef<ReCAPTCHA>(null)
-  const [serverError, setServerError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [resendCooldown, setResendCooldown] = useState(0)
-  const codeInputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    codeInputRef.current?.focus()
-  }, [])
-
-  useEffect(() => {
-    if (resendCooldown <= 0) return
-    const t = setInterval(() => setResendCooldown((c) => c - 1), 1000)
-    return () => clearInterval(t)
-  }, [resendCooldown])
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<FormData>({
-    resolver: zodResolver(verifyCodeSchema),
-  })
-  const { ref: formRef, ...restRegister } = register('code')
-
-  async function onSubmit(data: FormData) {
-    setServerError('')
-    setLoading(true)
-
-    const token = recaptchaRef.current?.getValue() ?? ''
-
-    // Verify code
-    const verifyRes = await fetch('/api/auth/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: draft.email, code: data.code, recaptchaToken: token }),
-    })
-
-    if (!verifyRes.ok) {
-      const json = await verifyRes.json() as { error: string }
-      setServerError(json.error ?? 'Invalid code')
-      recaptchaRef.current?.reset()
-      setLoading(false)
-      return
-    }
-
-    // Create user
-    const dobDate = new Date(
-      +draft.dob.yyyy,
-      +draft.dob.mm - 1,
-      +draft.dob.dd,
-    ).toISOString()
-
-    const signupRes = await fetch('/api/auth/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: draft.email,
-        password: draft.password,
-        dob: dobDate,
-        username: draft.username,
-        gender: draft.gender,
-        domain: draft.domain,
-        status: draft.status,
-      }),
-    })
-
-    if (!signupRes.ok) {
-      const json = await signupRes.json() as { error: string }
-      setServerError(json.error ?? 'Signup failed')
-      setLoading(false)
-      return
-    }
-
-    clearDraft()
-    router.replace('/auth/signup/success')
-  }
+  const email = useSignupStore((s) => s.draft.email)
+  const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [cooldown, setCooldown] = useState(0)
 
   async function handleResend() {
-    await fetch('/api/auth/resend', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: draft.email }),
+    setResendState('sending')
+    const supabase = createClient()
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     })
-    setResendCooldown(60)
+    if (error) {
+      setResendState('error')
+      return
+    }
+    setResendState('sent')
+    setCooldown(60)
+    const timer = setInterval(() => {
+      setCooldown((c) => {
+        if (c <= 1) { clearInterval(timer); setResendState('idle'); return 0 }
+        return c - 1
+      })
+    }, 1000)
   }
 
   return (
-    <>
-      <div
-        className="glass-card rounded-[22px] w-[calc(100%-64px)] lg:w-full max-w-[340px] lg:max-w-[420px] p-4 lg:p-8"
-      >
-        <label
-          htmlFor="code"
-          className="block text-text-primary mb-3"
-          style={{ fontSize: '18px', fontWeight: 500 }}
-        >
-          Enter Confirmation Code
-        </label>
+    <div className="glass-card rounded-[22px] w-[calc(100%-64px)] lg:w-full max-w-[340px] lg:max-w-[420px] p-4 lg:p-8 flex flex-col items-center text-center">
 
-        <input
-          id="code"
-          type="text"
-          inputMode="numeric"
-          maxLength={6}
-          placeholder="Check your Email Inbox"
-          autoComplete="one-time-code"
-          aria-describedby={serverError ? 'code-error' : undefined}
-          aria-invalid={!!serverError}
-          className="w-full h-14 rounded-pill bg-bg-input px-6 text-body text-text-primary placeholder:text-text-tertiary border border-transparent outline-none focus:border-accent-primary caret-accent-primary"
-          ref={(el) => {
-            formRef(el)
-            ;(codeInputRef as React.MutableRefObject<HTMLInputElement | null>).current = el
-          }}
-          {...restRegister}
-        />
-        {(errors.code || serverError) && (
-          <p id="code-error" role="alert" className="mt-1.5 text-caption text-text-error">
-            {errors.code?.message ?? serverError}
+      {/* Envelope icon */}
+      <div
+        className="flex items-center justify-center rounded-full mb-6"
+        style={{
+          width: 72, height: 72,
+          background: 'rgba(26,72,254,0.12)',
+          border: '1.5px solid rgba(26,72,254,0.25)',
+          boxShadow: '0 0 32px rgba(26,72,254,0.18)',
+        }}
+        aria-hidden="true"
+      >
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+          stroke="var(--blue)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2" />
+          <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+        </svg>
+      </div>
+
+      <h2 className="text-text-primary" style={{ fontSize: 22, fontWeight: 600 }}>
+        Check your inbox
+      </h2>
+      <p className="text-text-tertiary mt-3 leading-relaxed" style={{ fontSize: 14 }}>
+        We sent a confirmation link to{' '}
+        <span className="text-text-primary font-medium">{email || 'your email'}</span>.
+        Click the link to activate your account.
+      </p>
+
+      <p className="text-text-muted mt-4" style={{ fontSize: 13 }}>
+        No email? Check your spam folder or resend below.
+      </p>
+
+      <div className="mt-6 w-full">
+        {resendState === 'sent' ? (
+          <p className="text-center text-sm" style={{ color: 'var(--blue)' }}>
+            Email resent — check your inbox ✓
+            {cooldown > 0 && <span className="text-text-muted ml-2">({cooldown}s)</span>}
           </p>
-        )}
-
-        {/* Resend link */}
-        <div className="mt-3 text-center">
-          {resendCooldown > 0 ? (
-            <span className="text-caption text-text-muted">
-              Resend in {resendCooldown}s
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={handleResend}
-              className="text-caption text-text-link hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary rounded"
-            >
-              Didn&apos;t receive a code? Resend
-            </button>
-          )}
-        </div>
-
-        <div className="flex justify-center mt-6">
+        ) : resendState === 'error' ? (
+          <p className="text-center text-sm text-text-error">Failed to resend. Try again.</p>
+        ) : (
           <Button
-            variant="primary"
-            className="w-[200px]"
-            onClick={handleSubmit(onSubmit)}
-            disabled={loading}
-            aria-busy={loading}
+            variant="secondary"
+            className="w-full h-[48px]"
+            onClick={handleResend}
+            disabled={resendState === 'sending' || cooldown > 0}
+            aria-busy={resendState === 'sending'}
           >
-            {loading ? 'Verifying…' : 'Continue'}
+            {resendState === 'sending' ? 'Sending…' : 'Resend confirmation email'}
           </Button>
-        </div>
+        )}
       </div>
 
-      {/* reCAPTCHA */}
-      <div
-        className="glass-card rounded-[22px] flex items-center justify-center mt-4 lg:mt-8 w-[calc(100%-64px)] lg:w-full max-w-[320px] lg:max-w-[420px] h-[96px]"
-      >
-        <ReCAPTCHA
-          ref={recaptchaRef}
-          sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ?? '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'}
-          theme="dark"
-        />
-      </div>
-    </>
+      <p className="mt-5 text-text-muted" style={{ fontSize: 12 }}>
+        Wrong email?{' '}
+        <a href="/auth/signup" className="text-text-link hover:underline">
+          Go back and change it
+        </a>
+      </p>
+    </div>
   )
 }

@@ -13,7 +13,7 @@ We will split our deployments:
 ## Consequences
 * **Positive:** The frontend benefits from Vercel's global CDN, edge caching, and Image Optimization.
 * **Positive:** The backend avoids Vercel's serverless execution timeouts and connection limits, maintaining persistent DB connections via Railway.
-* **Negative:** Introduces complexity in CI/CD and requires CORS configuration for `api.codemoteams.com`.
+* **Negative:** Introduces complexity in CI/CD and requires CORS configuration for `api.codemoteam.org`.
 * **Negative:** Two separate dashboards to monitor for deployment health.
 
 ## Alternatives Considered

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -19,6 +19,13 @@ const GENDERS = ['Male', 'Female', 'Not Listed'] as const
 export default function SignupStep2Page() {
   const router = useRouter()
   const { draft, setDob, setUsername, setGender } = useSignupStore()
+
+  // Guard: step 1 must be complete before arriving here.
+  useEffect(() => {
+    if (!draft.email || !draft.password) {
+      router.replace('/auth/signup')
+    }
+  }, [draft.email, draft.password, router])
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null)
   const [checkingUsername, setCheckingUsername] = useState(false)
 

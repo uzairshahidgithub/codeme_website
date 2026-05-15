@@ -6,7 +6,7 @@
 Deploying directly to Vercel and Railway exposes origin IPs and places the burden of malicious traffic filtering entirely on application-level middleware. This consumes compute resources and bandwidth, potentially exhausting free-tier limits or inflating costs.
 
 ## Decision
-We will position Cloudflare as the strict edge proxy for all incoming traffic to `codemoteams.com` and its subdomains.
+We will position Cloudflare as the strict edge proxy for all incoming traffic to `codemoteam.org` and its subdomains.
 * All DNS records must be proxied (Orange Cloud).
 * Cloudflare will handle SSL/TLS termination, WAF (Web Application Firewall) execution, and DDoS mitigation.
 * Basic rate limiting (e.g., protecting `/api/v1/auth`) will be enforced at the Cloudflare edge before reaching Railway.

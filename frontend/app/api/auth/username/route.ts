@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
 const querySchema = z
@@ -19,10 +19,14 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  const existing = await db.user.findUnique({
-    where: { username: parsed.data },
-    select: { id: true },
-  })
+  const supabase = createAdminClient()
+  const { data } = await supabase.auth.admin.listUsers()
 
-  return NextResponse.json({ available: !existing })
+  const taken = (data?.users ?? []).some(
+    (u) =>
+      (u.user_metadata?.username as string | undefined)?.toLowerCase() ===
+      parsed.data.toLowerCase(),
+  )
+
+  return NextResponse.json({ available: !taken })
 }

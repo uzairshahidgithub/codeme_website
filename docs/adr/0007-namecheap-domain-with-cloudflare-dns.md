@@ -7,7 +7,7 @@ Domain registration and DNS hosting are fundamentally different concerns. Bundli
 
 ## Decision
 We will strictly separate the domain registrar from the DNS provider:
-* **Registrar:** Namecheap will be used exclusively for registering and renewing the `codemoteams.com` domain.
+* **Registrar:** Namecheap will be used exclusively for registering and renewing the `codemoteam.org` domain.
 * **DNS Provider:** Cloudflare will act as the sole authoritative nameserver and DNS manager.
 * Namecheap's configuration will be limited entirely to pointing custom nameservers to Cloudflare.
 

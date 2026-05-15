@@ -3,10 +3,18 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter frontend dev & pnpm --filter backend dev",
-    "build": "pnpm --filter frontend build && pnpm --filter backend build",
-    "lint": "pnpm --filter frontend lint && pnpm --filter backend lint",
-    "typecheck": "pnpm --filter frontend typecheck && pnpm --filter backend typecheck",
-    "test": "pnpm --filter frontend test && pnpm --filter backend test"
+    "dev": "pnpm --filter frontend dev",
+    "build": "pnpm --filter frontend build",
+    "lint": "pnpm --filter frontend lint",
+    "typecheck": "pnpm --filter frontend typecheck",
+    "test": "pnpm --filter frontend test",
+    "db:push": "supabase db push",
+    "db:reset": "supabase db reset",
+    "db:diff": "supabase db diff",
+    "functions:deploy": "supabase functions deploy",
+    "functions:serve": "supabase functions serve",
+    "supa:start": "supabase start",
+    "supa:stop": "supabase stop",
+    "supa:status": "supabase status"
   }
 }

@@ -1,11 +1,13 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  transpilePackages: ['@react-three/fiber', '@react-three/drei'],
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
       { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
       { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
+      { protocol: 'https', hostname: '*.supabase.co' },
     ],
   },
   // Security headers are applied in middleware.ts for nonce support.
