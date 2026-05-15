@@ -59,10 +59,11 @@ export default function AuthDefaultPage() {
 
   async function signInWithProvider(provider: Provider) {
     const supabase = createClient()
+    const origin = window.location.origin.replace('0.0.0.0', 'localhost')
     await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${origin}/auth/callback`,
       },
     })
   }
