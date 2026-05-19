@@ -14,6 +14,7 @@ const AUTH_ROUTE_EXCEPTIONS = [
   '/auth/onboarding',
   '/auth/signup/verify',
   '/auth/signup/success',
+  '/auth/signup/details',
   '/auth/signup/career',
   '/auth/update-password',
   '/auth/reset-password',
@@ -21,6 +22,18 @@ const AUTH_ROUTE_EXCEPTIONS = [
 ]
 
 const AUTH_ROUTES = ['/auth']
+
+/* Detects phone / tablet user agents. Used to gate admin
+   routes off the mobile experience entirely — the admin
+   panel is desktop-only (heavy tables, MFA flows, audit
+   tooling) and isn't designed to be operated from a phone.
+   We do this in the proxy so the redirect happens BEFORE
+   the admin layout boots and reads cookies / hits supabase. */
+const MOBILE_UA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i
+function isMobileUA(request: NextRequest): boolean {
+  const ua = request.headers.get('user-agent') ?? ''
+  return MOBILE_UA.test(ua)
+}
 
 function addSecurityHeaders(response: NextResponse, nonce: string): NextResponse {
   const csp = [
@@ -53,8 +66,26 @@ function addSecurityHeaders(response: NextResponse, nonce: string): NextResponse
 }
 
 export async function proxy(request: NextRequest) {
+  // If the user's browser somehow accesses the dev server via 0.0.0.0
+  // (which Zen browser blocks on OAuth redirects), force them to localhost.
+  if (request.nextUrl.hostname === '0.0.0.0') {
+    const newUrl = new URL(request.url)
+    newUrl.hostname = 'localhost'
+    return NextResponse.redirect(newUrl)
+  }
+
   const { pathname } = request.nextUrl
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
+
+  // Admin panel is desktop-only. Mobile clients are bounced
+  // back to home BEFORE supabase auth runs — no admin route
+  // (including its auth/MFA pages) is reachable from a phone.
+  if (pathname.startsWith('/admin') && isMobileUA(request)) {
+    return addSecurityHeaders(
+      NextResponse.redirect(new URL('/', request.url)),
+      nonce,
+    )
+  }
 
   // Build a mutable response that Supabase can attach refreshed session cookies to.
   let supabaseResponse = NextResponse.next({ request })
@@ -111,23 +142,14 @@ export async function proxy(request: NextRequest) {
   }
 
   // Guard: authenticated user whose profile is incomplete must finish onboarding.
-  // Email-signup users have no session until email confirmation, so this only
-  // fires for OAuth users who abandoned /auth/onboarding mid-flow.
-  if (user && pathname !== '/auth/onboarding' && !isAuthException) {
+  if (user && pathname !== '/auth/signup/details' && !isAuthException) {
     const meta = user.user_metadata as {
       profile_complete?: boolean
-      username?: string
-      domain?: string
-      status?: string
     } | undefined
 
-    const profileIncomplete =
-      !meta?.profile_complete &&
-      !(meta?.username && meta?.domain && meta?.status)
-
-    if (profileIncomplete) {
+    if (!meta?.profile_complete) {
       return addSecurityHeaders(
-        NextResponse.redirect(new URL('/auth/onboarding', request.url)),
+        NextResponse.redirect(new URL('/auth/signup/details', request.url)),
         nonce,
       )
     }

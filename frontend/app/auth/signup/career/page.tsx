@@ -10,7 +10,8 @@ import { signupStep3Schema } from '@/lib/validations/auth'
 import { useSignupStore } from '@/stores/signup'
 import { Chip } from '@/components/ui/Chip'
 import { Button } from '@/components/ui/Button'
-import { cn } from '@/lib/utils'
+import { cn, getTurnstileSiteKey } from '@/lib/utils'
+import { Turnstile } from '@marsidev/react-turnstile'
 
 type FormData = z.infer<typeof signupStep3Schema>
 
@@ -143,17 +144,14 @@ export default function SignupStep3Page() {
   const { draft, setDomain, setStatus } = useSignupStore()
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState('')
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
 
-  // Guard: steps 1 and 2 must be complete before arriving here.
+  // Guard: User must have completed details step before arriving here.
   useEffect(() => {
-    if (!draft.email || !draft.password) {
-      router.replace('/auth/signup')
-      return
-    }
     if (!draft.username || !draft.gender || !draft.dob.yyyy) {
       router.replace('/auth/signup/details')
     }
-  }, [draft.email, draft.password, draft.username, draft.gender, draft.dob.yyyy, router])
+  }, [draft.username, draft.gender, draft.dob.yyyy, router])
 
   const {
     handleSubmit,
@@ -169,6 +167,10 @@ export default function SignupStep3Page() {
   const domain = watch('domain', '')
 
   async function onSubmit(data: FormData) {
+    if (!turnstileToken) {
+      setSendError('Please complete the security validation.')
+      return
+    }
     setSendError('')
     setSending(true)
     setDomain(data.domain)
@@ -177,21 +179,16 @@ export default function SignupStep3Page() {
     const { draft: current } = useSignupStore.getState()
 
     const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
-      email: current.email,
-      password: current.password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-        data: {
-          signup_flow: 'email',
-          profile_complete: true,
-          username: current.username,
-          first_name: current.username,
-          dob: `${current.dob.yyyy}-${current.dob.mm.padStart(2, '0')}-${current.dob.dd.padStart(2, '0')}`,
-          gender: current.gender,
-          domain: data.domain,
-          status: data.status,
-        },
+    const { error } = await supabase.auth.updateUser({
+      data: {
+        signup_flow: 'email',
+        profile_complete: true,
+        username: current.username,
+        first_name: current.username,
+        dob: `${current.dob.yyyy}-${current.dob.mm.padStart(2, '0')}-${current.dob.dd.padStart(2, '0')}`,
+        gender: current.gender,
+        domain: data.domain,
+        status: data.status,
       },
     })
 
@@ -256,6 +253,16 @@ export default function SignupStep3Page() {
             {sendError}
           </p>
         )}
+
+        <div className="mt-6 flex justify-center">
+          <Turnstile
+            siteKey={getTurnstileSiteKey()}
+            onSuccess={(token) => setTurnstileToken(token)}
+            onError={() => setSendError('Security check failed to load.')}
+            onExpire={() => setTurnstileToken(null)}
+            options={{ theme: 'dark' }}
+          />
+        </div>
 
         {/* Continue */}
         <div className="flex justify-center mt-8">

@@ -2,6 +2,10 @@
 
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import { Award, LogOut, Settings as SettingsIcon, UserPen } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface ProfileDropdownUser {
@@ -17,53 +21,134 @@ interface ProfileDropdownProps {
   onClose: () => void
   onEditProfile?: () => void
   onSettings?: () => void
+  /** External trigger element to anchor against. */
+  anchorRef: React.RefObject<HTMLElement | null>
 }
 
-function SettingsIcon() {
+/* ────────────────────────────────────────────────────────────
+   ProfileDropdown — portal-rendered popup anchored under the
+   avatar trigger.
+
+   Why portal: the navbar pill has `overflow: visible` but the
+   absolute popup was previously trapped inside the pill's
+   stacking context, leaving it visually clipped behind nearby
+   content. Rendering into <body> with fixed coordinates means
+   the popup floats above EVERYTHING (cards, modals, sidebar)
+   and is always fully visible.
+
+   Icons: lucide-react (Award, UserPen, Settings, LogOut)
+   wrapped in macOS-style filled squircles to match the rest
+   of the home page language.
+   ────────────────────────────────────────────────────────── */
+
+interface ActionRowProps {
+  icon: ReactNode
+  label: string
+  trailing?: ReactNode
+  onClick: () => void
+  destructive?: boolean
+}
+
+/* Minimal action row — just a line icon and a label.
+   No coloured squircle, no fill backgrounds. The icon
+   inherits text colour, so it shifts with the row's
+   hover state. Destructive row paints the icon red. */
+function ActionRow({ icon, label, trailing, onClick, destructive }: ActionRowProps) {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-    </svg>
+    <button
+      onClick={onClick}
+      className={`
+        group w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px]
+        text-text-secondary hover:text-text-primary
+        hover:bg-text-primary/[0.05]
+        transition-colors duration-150
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary
+        ${destructive ? 'hover:text-[#ff5c5c]' : ''}
+      `}
+    >
+      <span
+        className={`shrink-0 ${destructive ? 'text-[#ff5c5c]' : 'text-text-tertiary group-hover:text-text-primary'} transition-colors`}
+        aria-hidden="true"
+      >
+        {icon}
+      </span>
+      <span className={`flex-1 text-left text-[14px] font-medium ${destructive ? 'text-[#ff5c5c]' : ''}`}>
+        {label}
+      </span>
+      {trailing && (
+        <span className="text-text-tertiary text-[11px] tabular-nums">{trailing}</span>
+      )}
+    </button>
   )
 }
 
-function LogoutIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-      <polyline points="16 17 21 12 16 7" />
-      <line x1="21" y1="12" x2="9" y2="12" />
-    </svg>
-  )
-}
-
-export function ProfileDropdown({ user, onClose, onEditProfile, onSettings }: ProfileDropdownProps) {
+export function ProfileDropdown({
+  user,
+  onClose,
+  onEditProfile,
+  onSettings,
+  anchorRef,
+}: ProfileDropdownProps) {
   const router = useRouter()
+  const menuRef = useRef<HTMLDivElement | null>(null)
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => setMounted(true), [])
+
+  // Anchor under the trigger's bottom-right corner. Right-aligned
+  // and clamped to the viewport so the popup never pokes off-screen.
+  useLayoutEffect(() => {
+    function place() {
+      const el = anchorRef.current
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      const right = Math.max(10, window.innerWidth - r.right)
+      const top = r.bottom + 10
+      setPos({ top, right })
+    }
+    place()
+    window.addEventListener('scroll', place, { passive: true, capture: true })
+    window.addEventListener('resize', place)
+    return () => {
+      window.removeEventListener('scroll', place, { capture: true } as EventListenerOptions)
+      window.removeEventListener('resize', place)
+    }
+  }, [anchorRef])
+
+  // Outside click + ESC close
+  useEffect(() => {
+    function onDown(e: MouseEvent) {
+      const t = e.target as Node
+      if (anchorRef.current?.contains(t)) return
+      if (menuRef.current?.contains(t)) return
+      onClose()
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [anchorRef, onClose])
 
   function navigate(path: string) {
     onClose()
     router.push(path)
   }
-
   function handleEditProfile() {
     onClose()
-    if (onEditProfile) {
-      onEditProfile()
-    } else {
-      router.push('/profile/edit')
-    }
+    if (onEditProfile) onEditProfile()
+    else router.push('/profile/edit')
   }
-
   function handleSettings() {
     onClose()
-    if (onSettings) {
-      onSettings()
-    } else {
-      router.push('/profile/settings')
-    }
+    if (onSettings) onSettings()
+    else router.push('/profile/settings')
   }
-
   async function handleLogout() {
     onClose()
     const supabase = createClient()
@@ -74,109 +159,94 @@ export function ProfileDropdown({ user, onClose, onEditProfile, onSettings }: Pr
 
   const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ')
 
-  return (
-    <div
-      className="absolute top-[calc(100%+10px)] right-0 w-[300px] glass-card rounded-[22px] p-[26px] animate-drop-down dropdown-animation z-50"
-      role="dialog"
-      aria-label="Profile menu"
-    >
-      {/* Avatar + name header */}
-      <div className="flex items-center gap-[16px] mb-[20px]">
-        <div
-          className="w-[58px] h-[58px] rounded-full flex items-center justify-center shrink-0 overflow-hidden"
-          style={{
-            background: 'var(--input-glass)',
-            border: '2.5px solid var(--blue)',
-            boxShadow: '0 0 0 4px var(--blue-glow)',
-          }}
+  if (!mounted) return null
+
+  return createPortal(
+    <AnimatePresence>
+      {pos && (
+        <motion.div
+          ref={menuRef}
+          role="dialog"
+          aria-label="Profile menu"
+          initial={{ opacity: 0, y: 6, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 6, scale: 0.98 }}
+          transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+          style={{ position: 'fixed', top: pos.top, right: pos.right, zIndex: 500 }}
+          className="w-[300px] glass-card rounded-[22px] p-5"
         >
-          {user.avatarUrl ? (
-            <Image
-              src={user.avatarUrl}
-              alt={fullName}
-              width={58}
-              height={58}
-              className="object-cover w-full h-full"
+          {/* Avatar + name header */}
+          <div className="flex items-center gap-3 mb-4">
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 overflow-hidden"
+              style={{
+                background: 'var(--input-glass)',
+                border: '2px solid var(--blue)',
+                boxShadow: '0 0 0 3px var(--blue-glow)',
+              }}
+            >
+              {user.avatarUrl ? (
+                <Image
+                  src={user.avatarUrl}
+                  alt={fullName}
+                  width={48}
+                  height={48}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <span className="text-text-primary font-semibold text-[18px]">
+                  {user.firstName.charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="text-text-primary truncate text-[15px] font-semibold">{fullName}</p>
+              {user.title && (
+                <p className="text-text-secondary mt-0.5 truncate text-[12px]">{user.title}</p>
+              )}
+              <span
+                className="inline-block mt-1.5 text-text-secondary text-[10px] font-medium px-2 py-0.5 rounded-full"
+                style={{ background: 'var(--input-glass)', border: '1px solid var(--border)' }}
+              >
+                Community Member
+              </span>
+            </div>
+          </div>
+
+          {/* Action rows */}
+          <div
+            className="flex flex-col gap-1 pt-3"
+            style={{ borderTop: '1px solid var(--border)' }}
+          >
+            <ActionRow
+              icon={<Award size={18} strokeWidth={1.6} />}
+              label="Achievements"
+              trailing={`Level ${user.level ?? 1}`}
+              onClick={() => navigate('/profile/achievements')}
             />
-          ) : (
-            <span className="text-text-primary font-semibold" style={{ fontSize: 22 }}>
-              {user.firstName.charAt(0).toUpperCase()}
-            </span>
-          )}
-        </div>
-        <div className="min-w-0">
-          <p className="text-text-primary truncate" style={{ fontSize: '16px', fontWeight: 600 }}>
-            {fullName}
-          </p>
-          {user.title && (
-            <p className="text-text-secondary mt-[3px] truncate" style={{ fontSize: '13px' }}>
-              {user.title}
-            </p>
-          )}
-          <span
-            className="inline-block mt-[7px] glass-chip text-text-secondary"
-            style={{ fontSize: '11px', padding: '3px 12px', borderRadius: '14px', fontWeight: 500 }}
-          >
-            Community Member
-          </span>
-        </div>
-      </div>
+            <ActionRow
+              icon={<UserPen size={18} strokeWidth={1.6} />}
+              label="Edit Profile"
+              onClick={handleEditProfile}
+            />
+            <ActionRow
+              icon={<SettingsIcon size={18} strokeWidth={1.6} />}
+              label="Settings"
+              onClick={handleSettings}
+            />
 
-      {/* Action rows */}
-      <div className="flex flex-col" style={{ borderTop: '1px solid var(--border)', paddingTop: 8 }}>
-        <button
-          onClick={() => navigate('/profile/achievements')}
-          className="w-full flex items-center gap-[14px] p-[11px_8px] rounded-[12px] text-text-secondary hover:text-text-primary hover:bg-white/[0.04] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
-          style={{ fontSize: '15px' }}
-        >
-          <img
-            src="/icons/Achievements (Default).svg"
-            alt=""
-            width={20}
-            height={20}
-            className="shrink-0 icon-idle-filter"
-          />
-          <span className="flex-1 text-left">Achievements</span>
-          <span className="text-text-tertiary" style={{ fontSize: '12px' }}>
-            Level {user.level ?? 1}
-          </span>
-        </button>
+            <div className="my-1.5" style={{ borderTop: '1px solid var(--border)' }} />
 
-        <button
-          onClick={handleEditProfile}
-          className="w-full flex items-center gap-[14px] p-[11px_8px] rounded-[12px] text-text-secondary hover:text-text-primary hover:bg-white/[0.04] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
-          style={{ fontSize: '15px' }}
-        >
-          <img
-            src="/icons/Edit Profile (Default).svg"
-            alt=""
-            width={20}
-            height={20}
-            className="shrink-0 icon-idle-filter"
-          />
-          <span className="text-left">Edit Profile</span>
-        </button>
-
-        <button
-          onClick={handleSettings}
-          className="w-full flex items-center gap-[14px] p-[11px_8px] rounded-[12px] text-text-secondary hover:text-text-primary hover:bg-white/[0.04] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
-          style={{ fontSize: '15px' }}
-        >
-          <span className="shrink-0 text-text-tertiary"><SettingsIcon /></span>
-          <span className="text-left">Settings</span>
-        </button>
-
-        <div style={{ borderTop: '1px solid var(--border)', marginTop: 4, paddingTop: 4 }}>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-[14px] p-[11px_8px] rounded-[12px] hover:bg-white/[0.04] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-error"
-            style={{ fontSize: '15px', color: '#ff5c5c' }}
-          >
-            <span className="shrink-0"><LogoutIcon /></span>
-            <span className="text-left">Log out</span>
-          </button>
-        </div>
-      </div>
-    </div>
+            <ActionRow
+              icon={<LogOut size={18} strokeWidth={1.6} />}
+              label="Log out"
+              destructive
+              onClick={handleLogout}
+            />
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body,
   )
 }

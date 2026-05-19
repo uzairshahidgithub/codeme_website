@@ -2,20 +2,39 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
 // Handles OAuth redirects AND email confirmation magic-links.
+/**
+ * Normalise the origin so redirects never point at 0.0.0.0.
+ * `next dev --hostname 0.0.0.0` makes `request.url` contain that
+ * un-routable address; Zen (and most browsers) refuse to connect.
+ */
+function safeOrigin(requestUrl: string): string {
+  const envOrigin = process.env.NEXT_PUBLIC_SITE_URL
+  if (envOrigin) return envOrigin.replace(/\/$/, '')
+
+  const parsed = new URL(requestUrl)
+  if (parsed.hostname === '0.0.0.0') parsed.hostname = 'localhost'
+  return parsed.origin
+}
+
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url)
+  const { searchParams } = new URL(request.url)
+  const origin = safeOrigin(request.url)
   const code = searchParams.get('code')
   const type = searchParams.get('type')
   const next = searchParams.get('next') ?? '/'
+  const providerError = searchParams.get('error')
+  const providerErrorDescription = searchParams.get('error_description')
+
+  // If the OAuth provider returned an error (e.g. user cancelled)
+  if (providerError || providerErrorDescription) {
+    return NextResponse.redirect(`${origin}/auth?error=${encodeURIComponent(providerErrorDescription || providerError || 'callback_failed')}`)
+  }
 
   if (!code) {
-    return NextResponse.redirect(`${origin}/auth?error=callback_failed`)
+    return NextResponse.redirect(`${origin}/auth?error=Missing_auth_code`)
   }
 
   // Collect cookies that Supabase wants to set during the code exchange.
-  // We CANNOT use cookies() from next/headers here because those go onto an
-  // implicit response; the NextResponse.redirect() we return is a different
-  // object and the browser would never receive the session cookies.
   const pendingCookies: Array<{ name: string; value: string; options: CookieOptions }> = []
 
   const supabase = createServerClient(
@@ -27,7 +46,6 @@ export async function GET(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-          // Buffer them — we'll attach to the redirect response below.
           pendingCookies.push(...cookiesToSet)
         },
       },
@@ -36,8 +54,13 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
+  if (error) {
+    console.error('OAuth Callback Error:', error)
+    return NextResponse.redirect(`${origin}/auth?error=${encodeURIComponent(error.message)}`)
+  }
+
   // Determine where to redirect after the exchange.
-  let redirectTo = `${origin}/auth?error=callback_failed`
+  let redirectTo = `${origin}/auth`
 
   if (!error && data.user) {
     if (type === 'recovery') {
@@ -51,9 +74,7 @@ export async function GET(request: NextRequest) {
         redirectTo = `${origin}/auth/signup/success`
       } else {
         // OAuth sign-in: route incomplete profiles to onboarding.
-        const profileComplete =
-          meta?.profile_complete === true ||
-          (meta?.username && meta?.domain && meta?.status)
+        const profileComplete = meta?.profile_complete === true
 
         redirectTo = profileComplete
           ? `${origin}${next}`

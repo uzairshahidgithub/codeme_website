@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { AnimatePresence, motion } from 'framer-motion'
 
 interface DrawerProps {
   open: boolean
@@ -10,9 +11,25 @@ interface DrawerProps {
   children: React.ReactNode
 }
 
+/* ────────────────────────────────────────────────────────────
+   Drawer — right-side panel with proper enter AND exit motion.
+
+   Previously the panel mounted/unmounted instantly and only
+   ran a CSS keyframe on enter — so closing felt abrupt. Now
+   wrapped in <AnimatePresence>: on open the backdrop fades in
+   and the panel slides in from the right; on close the
+   reverse plays before the panel unmounts.
+
+   Backdrop and panel are still portalled into <body> so the
+   drawer is never clipped by surrounding overflow:hidden
+   containers, and the body scroll is locked while open.
+   ────────────────────────────────────────────────────────── */
+
 export function Drawer({ open, onClose, title, children }: DrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null)
-  const mounted = typeof document !== 'undefined'
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => setMounted(true), [])
 
   // Body scroll lock
   useEffect(() => {
@@ -32,7 +49,7 @@ export function Drawer({ open, onClose, title, children }: DrawerProps) {
     return () => document.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
-  // Focus trap
+  // Focus trap — initial focus + Tab cycling
   useEffect(() => {
     if (!open || !drawerRef.current) return
     const el = drawerRef.current
@@ -41,7 +58,7 @@ export function Drawer({ open, onClose, title, children }: DrawerProps) {
     function onTab(e: KeyboardEvent) {
       if (e.key !== 'Tab') return
       const focusable = Array.from(el.querySelectorAll<HTMLElement>(selector)).filter(
-        (n) => !n.hasAttribute('disabled')
+        (n) => !n.hasAttribute('disabled'),
       )
       if (focusable.length === 0) { e.preventDefault(); return }
       const first = focusable[0]
@@ -54,91 +71,108 @@ export function Drawer({ open, onClose, title, children }: DrawerProps) {
     }
 
     document.addEventListener('keydown', onTab)
-    // Defer focus so the drawer panel is painted first
     const t = setTimeout(() => {
       const focusable = el.querySelectorAll<HTMLElement>(selector)
       focusable[0]?.focus()
-    }, 60)
+    }, 80)
     return () => {
       clearTimeout(t)
       document.removeEventListener('keydown', onTab)
     }
   }, [open])
 
-  if (!open || !mounted) return null
+  if (!mounted) return null
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-[600]"
-      role="dialog"
-      aria-modal="true"
-      aria-label={title}
-    >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0"
-        style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
-      {/* Drawer panel */}
-      <div
-        ref={drawerRef}
-        className="drawer-panel absolute top-0 right-0 h-full flex flex-col"
-        style={{
-          width: 'min(480px, 100vw)',
-          background: 'var(--card-glass)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderLeft: '1px solid var(--border)',
-          boxShadow: '-8px 0 60px rgba(0,0,0,0.4)',
-          animation: 'drawer-slide-in 0.28s cubic-bezier(0.4,0,0.2,1) both',
-        }}
-      >
-        {/* Header */}
+    <AnimatePresence>
+      {open && (
         <div
-          className="flex items-center justify-between px-6 shrink-0"
-          style={{ height: 64, borderBottom: '1px solid var(--border)' }}
+          className="fixed inset-0 z-[600]"
+          role="dialog"
+          aria-modal="true"
+          aria-label={title}
         >
-          {title ? (
-            <h2
-              id="drawer-title"
-              className="text-text-primary"
-              style={{ fontSize: 17, fontWeight: 600 }}
-            >
-              {title}
-            </h2>
-          ) : <span />}
-          <button
+          {/* Backdrop — fade */}
+          <motion.div
+            className="absolute inset-0"
+            style={{
+              background: 'rgba(0,0,0,0.55)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             onClick={onClose}
-            className="rounded-full flex items-center justify-center text-text-tertiary hover:text-text-primary hover:bg-white/[0.06] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
-            style={{ width: 36, height: 36 }}
-            aria-label="Close"
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
+            aria-hidden="true"
+          />
 
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto">
-          {children}
+          {/* Drawer panel — slide in from the right, slide out
+              to the right. Spring curves keep it tactile but
+              never overshoot.
+              Surface + drop shadow use the design tokens
+              (`--card-glass`, `--shadow`) so the panel renders
+              correctly in BOTH dark and light themes — the
+              previous hardcoded `rgba(0,0,0,.45)` shadow was a
+              hard black line in light mode and invisible in
+              dark mode. */}
+          <motion.div
+            ref={drawerRef}
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', stiffness: 320, damping: 34, mass: 0.9 }}
+            className="absolute top-0 right-0 h-full flex flex-col border-l border-border-subtle"
+            style={{
+              width: 'min(480px, 100vw)',
+              background: 'var(--card-glass)',
+              backdropFilter: 'blur(24px) saturate(140%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(140%)',
+              boxShadow: 'var(--shadow)',
+            }}
+          >
+            {/* Header */}
+            <div
+              className="flex items-center justify-between px-6 shrink-0 border-b border-border-subtle"
+              style={{ height: 64 }}
+            >
+              {title ? (
+                <h2 id="drawer-title" className="text-text-primary text-[17px] font-semibold tracking-tight">
+                  {title}
+                </h2>
+              ) : <span />}
+              <button
+                onClick={onClose}
+                className="
+                  inline-flex items-center justify-center
+                  w-9 h-9 rounded-full
+                  text-text-tertiary hover:text-text-primary
+                  hover:bg-text-primary/[0.06]
+                  transition-colors
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary
+                "
+                aria-label="Close"
+              >
+                <svg
+                  width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2.2"
+                  strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto">
+              {children}
+            </div>
+          </motion.div>
         </div>
-      </div>
-    </div>,
-    document.body
+      )}
+    </AnimatePresence>,
+    document.body,
   )
 }

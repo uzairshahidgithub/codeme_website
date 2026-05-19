@@ -24,9 +24,16 @@ export function BottomNav() {
         right: 'var(--mob-dock-px, 16px)'
       }}
     >
-      {/* Main dock */}
+      {/* Main dock — same TWO-layer backdrop as desktop
+          Sidebar so the chrome reads as identical glass on
+          both surfaces: always-on soft blur (14px) underneath
+          + mid-range tint (0.62) on top. Dropped the
+          .glass-sidebar class because it would have applied
+          the older single-layer treatment with the global
+          --glass-blur (8px) and full-opacity tint, which is
+          NOT what desktop now uses. */}
       <nav
-        className="flex items-center justify-center rounded-[22px] glass-sidebar"
+        className="relative flex items-center justify-center rounded-[22px] overflow-hidden"
         style={{
           height: 'var(--mob-dock-height, 64px)',
           paddingLeft: 'var(--mob-dock-px, 16px)',
@@ -35,6 +42,29 @@ export function BottomNav() {
         }}
         aria-label="Mobile navigation"
       >
+        {/* Layer 1 — always-on soft blur. */}
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            borderRadius: 'inherit',
+            backdropFilter: 'blur(14px) saturate(160%)',
+            WebkitBackdropFilter: 'blur(14px) saturate(160%)',
+          }}
+        />
+        {/* Layer 2 — mid-range tint, matches desktop. */}
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            borderRadius: 'inherit',
+            background: 'var(--side-glass)',
+            border: '1px solid var(--border)',
+            boxShadow:
+              'inset 0 1px 0 var(--inner-hi), 0 2px 12px var(--nav-shadow-color, rgba(0,0,0,0.12)), 0 8px 32px var(--nav-shadow-spread, rgba(0,0,0,0.08))',
+            opacity: 0.62,
+          }}
+        />
         {navItems.map((item) => {
           const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
           return (

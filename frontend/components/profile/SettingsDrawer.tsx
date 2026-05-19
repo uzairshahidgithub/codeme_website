@@ -1,14 +1,69 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import {
+  Check, ChevronLeft, ChevronRight, CircleAlert,
+  Eye, EyeOff, KeyRound, Loader2, LogOut, UserPen,
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
 import { cn } from '@/lib/utils'
+
+/* Shared input styling — matches EditProfileDrawer for visual
+   consistency across the settings flow. Uses explicit
+   color-mix() backgrounds because Tailwind's
+   bg-text-primary/[alpha] syntax can fall back to opaque
+   white when the underlying color is a CSS variable. */
+const inputBase =
+  'w-full h-11 rounded-[12px] px-3.5 text-[14px] text-text-primary placeholder:text-text-tertiary outline-none transition-all border border-border-subtle hover:border-border-subtle/80 focus:border-[color:var(--blue)] focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--blue)_18%,transparent)] caret-accent-primary bg-[color:color-mix(in_oklab,var(--text1)_7%,transparent)] hover:bg-[color:color-mix(in_oklab,var(--text1)_10%,transparent)] focus:bg-[color:color-mix(in_oklab,var(--text1)_13%,transparent)]'
+
+/* Minimal settings row — just a line icon and a label, no
+   coloured squircle background. Icon inherits text colour so
+   it brightens with the row's hover state. */
+function SettingsRow({
+  icon,
+  label,
+  onClick,
+  destructive,
+}: {
+  icon: ReactNode
+  label: string
+  onClick: () => void
+  destructive?: boolean
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'group flex items-center gap-4 w-full rounded-[12px] px-3 py-3',
+        'text-text-secondary hover:text-text-primary hover:bg-text-primary/[0.05]',
+        'transition-colors duration-150',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary',
+        destructive && 'hover:text-[#ff5c5c]',
+      )}
+    >
+      <span
+        className={cn(
+          'shrink-0 transition-colors',
+          destructive ? 'text-[#ff5c5c]' : 'text-text-tertiary group-hover:text-text-primary',
+        )}
+        aria-hidden="true"
+      >
+        {icon}
+      </span>
+      <span className={cn('flex-1 text-left text-[14px] font-medium', destructive && 'text-[#ff5c5c]')}>
+        {label}
+      </span>
+      {!destructive && (
+        <ChevronRight size={14} className="text-text-tertiary shrink-0" aria-hidden />
+      )}
+    </button>
+  )
+}
 
 type Section = 'menu' | 'change-password'
 
@@ -50,20 +105,6 @@ function PasswordStrengthBar({ password }: { password: string }) {
   )
 }
 
-function EyeIcon({ show }: { show: boolean }) {
-  return show ? (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  ) : (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-      <line x1="1" y1="1" x2="23" y2="23" />
-    </svg>
-  )
-}
-
 function ChangePasswordSection({ onBack }: { onBack: () => void }) {
   const [showNew, setShowNew] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -88,21 +129,20 @@ function ChangePasswordSection({ onBack }: { onBack: () => void }) {
 
   if (success) {
     return (
-      <div className="flex flex-col items-center gap-4 py-12 px-6">
+      <div className="flex flex-col items-center gap-4 py-14 px-6 text-center">
         <div
-          className="w-12 h-12 rounded-full flex items-center justify-center"
-          style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)' }}
+          className="w-14 h-14 rounded-full flex items-center justify-center"
+          style={{ background: 'color-mix(in oklab, #22c55e 14%, transparent)', border: '1px solid color-mix(in oklab, #22c55e 30%, transparent)' }}
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+          <Check size={26} strokeWidth={2.4} color="#22c55e" aria-hidden />
         </div>
-        <p className="text-text-primary text-center" style={{ fontSize: 15, fontWeight: 600 }}>Password updated</p>
-        <p className="text-text-tertiary text-center" style={{ fontSize: 13 }}>Your password has been changed successfully.</p>
+        <div>
+          <p className="text-text-primary text-[15px] font-semibold">Password updated</p>
+          <p className="text-text-tertiary text-[13px] mt-1">Your password has been changed successfully.</p>
+        </div>
         <button
           onClick={onBack}
-          className="mt-2 text-accent-primary hover:underline focus-visible:outline-none"
-          style={{ fontSize: 13 }}
+          className="mt-2 text-[color:var(--blue)] hover:underline focus-visible:outline-none text-[13px] font-medium"
         >
           Back to Settings
         </button>
@@ -110,39 +150,37 @@ function ChangePasswordSection({ onBack }: { onBack: () => void }) {
     )
   }
 
-  const inputCls = 'w-full h-[48px] rounded-xl px-4 pr-12 text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-accent-primary caret-accent-primary'
-
   return (
-    <div className="flex flex-col gap-5 px-6 py-5">
+    <div className="flex flex-col gap-5 px-6 py-6">
       {/* Back button */}
       <button
         onClick={onBack}
-        className="flex items-center gap-2 text-text-tertiary hover:text-text-primary transition-colors w-fit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary rounded"
-        style={{ fontSize: 13 }}
+        className="flex items-center gap-1.5 text-text-tertiary hover:text-text-primary transition-colors w-fit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary rounded text-[13px]"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-        Back
+        <ChevronLeft size={15} aria-hidden />
+        Back to Settings
       </button>
 
       <div>
-        <h3 className="text-text-primary" style={{ fontSize: 16, fontWeight: 600 }}>Change Password</h3>
-        <p className="text-text-tertiary mt-1" style={{ fontSize: 12 }}>Choose a strong password to secure your account.</p>
+        <h3 className="text-text-primary text-[18px] font-semibold tracking-tight">Change Password</h3>
+        <p className="text-text-tertiary mt-1 text-[13px] leading-snug">
+          Choose a strong password to keep your account secure.
+        </p>
       </div>
 
       <form onSubmit={(e) => { e.preventDefault(); void handleSubmit(onSubmit)() }} className="flex flex-col gap-4">
         {/* New password */}
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="sp-new" className="text-text-secondary" style={{ fontSize: 12, fontWeight: 500 }}>New Password</label>
+          <label htmlFor="sp-new" className="text-text-secondary text-[12px] font-medium tracking-wide">
+            New password
+          </label>
           <div className="relative">
             <input
               id="sp-new"
               type={showNew ? 'text' : 'password'}
-              placeholder="New password"
+              placeholder="At least 8 characters"
               autoComplete="new-password"
-              className={inputCls}
-              style={{ background: 'var(--input-glass)', border: '1px solid var(--border)' }}
+              className={cn(inputBase, 'pr-11')}
               {...register('newPassword')}
             />
             <button
@@ -150,25 +188,31 @@ function ChangePasswordSection({ onBack }: { onBack: () => void }) {
               onClick={() => setShowNew((v) => !v)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary transition-colors"
               aria-label={showNew ? 'Hide password' : 'Show password'}
+              tabIndex={-1}
             >
-              <EyeIcon show={showNew} />
+              {showNew ? <EyeOff size={16} aria-hidden /> : <Eye size={16} aria-hidden />}
             </button>
           </div>
           <PasswordStrengthBar password={newPassword} />
-          {errors.newPassword && <p className="text-xs text-text-error">{errors.newPassword.message}</p>}
+          {errors.newPassword && (
+            <p className="text-[12px] text-text-error flex items-center gap-1.5">
+              <CircleAlert size={12} aria-hidden /> {errors.newPassword.message}
+            </p>
+          )}
         </div>
 
         {/* Confirm password */}
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="sp-confirm" className="text-text-secondary" style={{ fontSize: 12, fontWeight: 500 }}>Confirm Password</label>
+          <label htmlFor="sp-confirm" className="text-text-secondary text-[12px] font-medium tracking-wide">
+            Confirm new password
+          </label>
           <div className="relative">
             <input
               id="sp-confirm"
               type={showConfirm ? 'text' : 'password'}
-              placeholder="Confirm new password"
+              placeholder="Re-type your new password"
               autoComplete="new-password"
-              className={inputCls}
-              style={{ background: 'var(--input-glass)', border: '1px solid var(--border)' }}
+              className={cn(inputBase, 'pr-11')}
               {...register('confirmPassword')}
             />
             <button
@@ -176,25 +220,46 @@ function ChangePasswordSection({ onBack }: { onBack: () => void }) {
               onClick={() => setShowConfirm((v) => !v)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary transition-colors"
               aria-label={showConfirm ? 'Hide password' : 'Show password'}
+              tabIndex={-1}
             >
-              <EyeIcon show={showConfirm} />
+              {showConfirm ? <EyeOff size={16} aria-hidden /> : <Eye size={16} aria-hidden />}
             </button>
           </div>
-          {errors.confirmPassword && <p className="text-xs text-text-error">{errors.confirmPassword.message}</p>}
+          {errors.confirmPassword && (
+            <p className="text-[12px] text-text-error flex items-center gap-1.5">
+              <CircleAlert size={12} aria-hidden /> {errors.confirmPassword.message}
+            </p>
+          )}
         </div>
 
-        {serverError && <p className="text-center text-sm text-text-error">{serverError}</p>}
+        {serverError && (
+          <p className="rounded-[10px] px-3 py-2 text-[12.5px] text-text-error bg-[color:color-mix(in_oklab,#ff5c5c_10%,transparent)] border border-[color:color-mix(in_oklab,#ff5c5c_30%,transparent)]">
+            {serverError}
+          </p>
+        )}
 
-        <div className="flex justify-center pt-1">
-          <Button
-            variant="primary"
-            className="w-[180px] h-[46px]"
-            onClick={handleSubmit(onSubmit)}
+        {/* Action bar — matches EditProfileDrawer */}
+        <div className="flex items-center justify-end gap-2 pt-3 mt-1">
+          <button
+            type="button"
+            onClick={onBack}
+            className="h-11 px-4 rounded-full text-[13.5px] font-medium text-text-secondary hover:text-text-primary hover:bg-text-primary/[0.05] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
             disabled={saving}
             aria-busy={saving}
+            className="inline-flex items-center gap-1.5 h-11 px-5 rounded-full text-[13.5px] font-medium text-white transition-all disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+            style={{
+              background: 'var(--blue)',
+              boxShadow: '0 8px 20px -10px color-mix(in oklab, var(--blue) 65%, transparent)',
+            }}
           >
-            {saving ? 'Saving…' : 'Update Password'}
-          </Button>
+            {saving && <Loader2 size={14} className="animate-spin" aria-hidden />}
+            {saving ? 'Updating…' : 'Update password'}
+          </button>
         </div>
       </form>
     </div>
@@ -224,69 +289,31 @@ export function SettingsDrawer({ open, onClose, onEditProfile }: SettingsDrawerP
     router.refresh()
   }
 
-  const menuItems = [
-    {
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-        </svg>
-      ),
-      label: 'Edit Profile',
-      onClick: () => { onClose(); onEditProfile?.() },
-    },
-    {
-      icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-        </svg>
-      ),
-      label: 'Change Password',
-      onClick: () => setSection('change-password'),
-    },
-  ]
-
   return (
     <Drawer open={open} onClose={onClose} title={section === 'menu' ? 'Settings' : undefined}>
       {section === 'change-password' ? (
         <ChangePasswordSection onBack={() => setSection('menu')} />
       ) : (
-        <div className="flex flex-col px-6 py-5 gap-2">
-          {menuItems.map(({ icon, label, onClick }) => (
-            <button
-              key={label}
-              onClick={onClick}
-              className={cn(
-                'flex items-center gap-4 w-full rounded-[14px] text-text-secondary hover:text-text-primary hover:bg-white/[0.04] transition-colors duration-150',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary',
-              )}
-              style={{ padding: '14px 12px', fontSize: 14 }}
-            >
-              <span className="text-text-tertiary shrink-0">{icon}</span>
-              <span className="flex-1 text-left font-medium">{label}</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-tertiary shrink-0" aria-hidden="true">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </button>
-          ))}
+        <div className="flex flex-col px-5 py-5 gap-1">
+          <SettingsRow
+            icon={<UserPen size={18} strokeWidth={1.6} />}
+            label="Edit Profile"
+            onClick={() => { onClose(); onEditProfile?.() }}
+          />
+          <SettingsRow
+            icon={<KeyRound size={18} strokeWidth={1.6} />}
+            label="Change Password"
+            onClick={() => setSection('change-password')}
+          />
 
-          {/* Divider + sign out */}
-          <div style={{ borderTop: '1px solid var(--border)', marginTop: 8, paddingTop: 8 }}>
-            <button
-              onClick={handleSignOut}
-              className={cn(
-                'flex items-center gap-4 w-full rounded-[14px] hover:bg-white/[0.04] transition-colors duration-150',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-text-error',
-              )}
-              style={{ padding: '14px 12px', fontSize: 14, color: '#ff5c5c' }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-              <span className="flex-1 text-left font-medium">Sign Out</span>
-            </button>
-          </div>
+          <div className="my-2 border-t border-border-subtle" />
+
+          <SettingsRow
+            icon={<LogOut size={18} strokeWidth={1.6} />}
+            label="Sign Out"
+            destructive
+            onClick={handleSignOut}
+          />
         </div>
       )}
     </Drawer>

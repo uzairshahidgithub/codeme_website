@@ -23,15 +23,37 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
     const wrapper = document.getElementById(id)
     if (!wrapper) return
 
+    /* Scroll feel — tuned for a slow, cinematic descent
+       through the homepage sections. Iterated from the
+       previous "snappy" preset:
+
+       • `wheelMultiplier` 1 → 0.55
+         Each wheel notch covers ~45% less distance. Pages
+         travel deliberately, giving the per-section reveals
+         time to actually play out under the user's eye.
+
+       • `duration` 1.1 → 1.7
+         Longer easing window per scroll burst. The page
+         glides to its destination — no snap, no overshoot.
+
+       • Easing: ease-out-expo → ease-out-quart
+         Expo decays in the first ~25% of the curve (reads
+         abrupt). Quart eases across the full arc, closer to
+         native macOS scroll inertia.
+
+       Touch is held at `touchMultiplier 1.15` (slightly
+       higher than wheel) so thumb swipes still cover useful
+       distance per gesture. `lerp` 0.07 is the soft fallback
+       when scroll bursts overlap. */
     const lenis = new Lenis({
       wrapper,
       content: wrapper.firstElementChild as HTMLElement ?? wrapper,
-      duration: 1.1,
-      easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      duration: 1.7,
+      easing: (t: number) => 1 - Math.pow(1 - t, 4),
       smoothWheel: true,
-      wheelMultiplier: 1,
-      touchMultiplier: 1.4,
-      lerp: 0.1,
+      wheelMultiplier: 0.55,
+      touchMultiplier: 1.15,
+      lerp: 0.07,
     })
 
     function raf(time: number) {

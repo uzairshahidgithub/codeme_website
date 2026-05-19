@@ -55,13 +55,13 @@ export default async function EventsPage() {
   }
 
   return (
-    <div className="px-6 md:px-10 py-8 max-w-[1400px] mx-auto w-full">
-      <header className="mb-8">
+    <div className="px-4 md:px-10 py-6 md:py-8 max-w-[1400px] mx-auto w-full">
+      <header className="mb-6 md:mb-8">
         <span className="home-mono-eyebrow">events</span>
-        <h1 className="text-text-primary mt-2" style={{ fontSize: 36, fontWeight: 700, lineHeight: 1.2 }}>
+        <h1 className="text-text-primary mt-2 leading-snug text-2xl md:text-4xl font-bold">
           Community <strong style={{ color: 'var(--accent-primary)' }}>Events</strong>
         </h1>
-        <p className="text-text-tertiary mt-2" style={{ fontSize: 15 }}>
+        <p className="text-text-tertiary mt-2 text-sm md:text-[15px]">
           Browse upcoming and past events. Click any event for details and to register.
         </p>
       </header>

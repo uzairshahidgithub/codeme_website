@@ -52,7 +52,7 @@
 }
 
 .home-aesthetic h1, .home-aesthetic h2, .home-aesthetic h3 {
-  margin: 0; font-weight: 300; letter-spacing: -0.02em; color: var(--hink);
+  margin: 0; font-weight: 700; letter-spacing: -0.025em; color: var(--hink);
 }
 
 /* ============== HERO ============== */
@@ -60,12 +60,13 @@
 .home-aesthetic .hero-frame {
   position: relative;
   width: 100%;
-  min-height: 720px;
+  min-height: 760px;
   border-radius: var(--hradius-xl);
   overflow: hidden;
   background: var(--hbg-elev);
   box-shadow: var(--hshadow-md);
   display: flex; flex-direction: column;
+  border: 1px solid var(--border);
 }
 .home-aesthetic .hero-3d-canvas {
   position: absolute; inset: 0; z-index: 0; overflow: hidden;
@@ -148,12 +149,14 @@
   display:inline-flex; align-items:center; justify-content:center;
 }
 
-/* Hero copy — compact, balanced for the rotating headline */
+/* Hero copy — vertically centred, breathing room provided by Tailwind py-* utilities on the JSX. */
 .home-aesthetic .hero-copy {
   position: relative; z-index: 4;
-  text-align: center; padding: 56px 24px 0;
-  display: flex; flex-direction: column; align-items: center; gap: 12px;
-  max-width: 760px; margin: 0 auto;
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center;
+  max-width: 880px; margin: 0 auto;
+  flex: 1;
+  justify-content: center;
 }
 .home-aesthetic .hero-badge {
   display: inline-flex; align-items: center; gap: 8px;
@@ -173,43 +176,13 @@
 /* Rotating headline — Instrument Serif for editorial aesthetic.
    Smaller scale than the previous hero title; reserves a fixed two-line
    height so the cross-fade doesn't push the layout. */
-.home-aesthetic .hero-title {
-  margin: 0;
-  font-family: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
-  font-weight: 400; font-style: italic;
-  font-size: clamp(32px, 4.4vw, 56px);
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-  color: var(--text1);
-  min-height: calc(2 * 1.05em);
-  display: flex; align-items: center; justify-content: center;
-  text-wrap: balance;
-}
-.home-aesthetic .hero-quote {
-  display: flex; flex-direction: column; gap: 0;
-  will-change: opacity, transform;
-}
-@keyframes hero-quote-in {
-  0%   { opacity: 0; transform: translateY(12px); filter: blur(4px); }
-  60%  { opacity: 1; transform: translateY(0);    filter: blur(0); }
-  100% { opacity: 1; transform: translateY(0);    filter: blur(0); }
-}
-.home-aesthetic .hero-quote-anim {
-  animation-name: hero-quote-in;
-  animation-timing-function: cubic-bezier(.22,1,.36,1);
-  animation-fill-mode: both;
-}
-@media (prefers-reduced-motion: reduce) {
-  .home-aesthetic .hero-quote-anim { animation: none; opacity: 1; transform: none; }
-}
-.home-aesthetic .hero-line { display: block; }
-.home-aesthetic .hero-line:nth-child(2) { color: var(--blue); }
+/* HERO HEADLINE — styling now owned by Tailwind utilities + framer-motion in components/home/RotatingHeadline.tsx */
 
 .home-aesthetic .hero-sub {
-  max-width: 480px;
+  max-width: 640px;
   font-family: var(--font-poppins), system-ui, sans-serif;
-  font-size: 13.5px; line-height: 1.55; color: var(--text3);
-  margin: 4px 0 0; font-weight: 400;
+  font-size: clamp(16px, 1.4vw, 20px); line-height: 1.55; color: var(--text3);
+  margin: 24px 0 0; font-weight: 500;
 }
 
 /* Glass corner card (bottom-left) */
@@ -263,24 +236,22 @@
   50%     { transform: translate(-50%, 6px); }
 }
 
-/* ============== STATS ============== */
+/* ============== STATS — bento panel, styling owned by Tailwind utilities in HomeStats.tsx ============== */
 .home-aesthetic .stats { padding: 48px 24px 24px; }
-.home-aesthetic .stats-shell {
-  max-width: 1480px; margin: 0 auto;
-  background: var(--hbg-surface);
-  border-radius: var(--hradius-lg);
-  padding: 40px 56px;
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px;
-  border: 1px solid var(--hborder);
-}
-.home-aesthetic .stat-n { font-size: clamp(40px, 4.5vw, 64px); font-weight: 300; letter-spacing: -0.035em; color: var(--hink); }
-.home-aesthetic .stat-l { font-size: 12px; color: var(--hink-3); text-transform: uppercase; letter-spacing: 0.14em; margin-top: 4px; }
 
 /* ============== SECTION HEADERS ============== */
 .home-aesthetic .events,
 .home-aesthetic .testi,
-.home-aesthetic .courses-inner { max-width: 1480px; margin: 0 auto; padding: 96px 24px; }
-.home-aesthetic .courses { background: var(--hbg-surface); margin-top: 32px; }
+.home-aesthetic .courses-inner {
+  max-width: 1480px; margin: 0 auto;
+  padding: clamp(64px, 8vw, 96px) clamp(20px, 4vw, 32px);
+}
+.home-aesthetic .courses { margin-top: 32px; /* background handled by adaptive Tailwind utilities */ }
+
+/* TopCourses chart numerals — outlined when inactive, solid when active */
+.chart-num { -webkit-text-stroke: 2px rgba(17, 24, 39, 0.18); }
+.dark .chart-num { -webkit-text-stroke: 2px rgba(255, 255, 255, 0.10); }
+.chart-num-active { -webkit-text-stroke: 0; }
 .home-aesthetic .sec-head {
   display: flex; align-items: flex-end; justify-content: space-between;
   margin-bottom: 40px; gap: 24px;
@@ -290,7 +261,13 @@
   font-size: 12px; text-transform: uppercase; letter-spacing: 0.16em;
   color: var(--haccent-2); margin-bottom: 12px;
 }
-.home-aesthetic .sec-head h2 { font-size: clamp(28px, 3.4vw, 44px); letter-spacing: -0.025em; max-width: 640px; }
+.home-aesthetic .sec-head h2 {
+  font-size: clamp(26px, 3.4vw, 42px);
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  max-width: 640px;
+  font-weight: 700;
+}
 
 /* ============== CARD GRIDS ============== */
 .home-aesthetic .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
@@ -348,14 +325,15 @@
   display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
 }
 .home-aesthetic .evt-title-lg {
-  font-family: var(--font-instrument-serif), Georgia, serif;
-  font-style: italic; font-weight: 400;
-  font-size: 26px; line-height: 1.15; letter-spacing: -0.02em;
+  font-family: var(--font-poppins), system-ui, sans-serif;
+  font-style: normal; font-weight: 600;
+  font-size: 18px; line-height: 1.3; letter-spacing: -0.015em;
   color: var(--text1);
   text-align: left;
   margin: 4px 0 0;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
+.home-aesthetic .evt-desc { color: var(--text3); font-size: 14px; line-height: 1.55; }
 .home-aesthetic .evt-foot-rich {
   display: flex; align-items: center; gap: 10px;
   margin-top: auto;
@@ -389,14 +367,15 @@
   line-height: 1.4;
 }
 .home-aesthetic .level {
-  position: absolute; top: 12px; left: 12px; z-index: 2;
+  display: inline-flex; align-items: center;
   padding: 4px 10px; border-radius: 999px;
   font-size: 11px; letter-spacing: 0.04em; text-transform: capitalize;
+  line-height: 1.2;
+  /* colors handled by adaptive Tailwind utilities (LEVEL_BADGE) */
 }
-/* Level pills — Codemo blue families instead of sage/gold/ink */
-.home-aesthetic .level-sage { background: rgba(26,72,254,0.12); color: var(--blue); }
-.home-aesthetic .level-gold { background: rgba(26,72,254,0.18); color: var(--blue); }
-.home-aesthetic .level-ink  { background: rgba(26,72,254,0.08); color: var(--text1); border: 1px solid var(--border); }
+.home-aesthetic .cover-art .level {
+  position: absolute; top: 14px; left: 14px; z-index: 2;
+}
 
 .home-aesthetic .evt-title,
 .home-aesthetic .crs-title {
@@ -445,22 +424,20 @@
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   border-radius: 22px;
-  background: var(--card-glass);
-  border: 1px solid var(--border);
-  box-shadow: 0 24px 60px rgba(0,0,0,0.30);
   padding: 0; overflow: hidden;
   display: block; cursor: default;
-  backdrop-filter: blur(var(--home-glass-blur)) saturate(140%);
-  -webkit-backdrop-filter: blur(var(--home-glass-blur)) saturate(140%);
+  /* surface, border, shadow handled by adaptive Tailwind utilities */
 }
 .home-aesthetic .course-cover-flat .cover-art {
   position: relative; width: 100%; height: 100%;
   display: flex; flex-direction: column; justify-content: flex-end;
   padding: 22px;
+}
+/* Dark-mode radial accent only — light mode shows a soft blue gradient veil from the JSX layer */
+.dark .home-aesthetic .course-cover-flat .cover-art {
   background:
     radial-gradient(120% 80% at 30% 20%, rgba(26,72,254,0.22), transparent 60%),
-    linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.35) 100%),
-    var(--card-glass);
+    linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.35) 100%);
 }
 .home-aesthetic .course-cover-flat .cover-stripes {
   position: absolute; inset: 0;
@@ -470,17 +447,15 @@
 }
 .home-aesthetic .course-cover-flat .cover-title-flat {
   position: relative; z-index: 1;
-  font-size: 18px; font-weight: 600; letter-spacing: -0.015em;
-  color: var(--text1);
+  font-size: 18px; letter-spacing: -0.015em;
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  /* color + font-weight handled by adaptive Tailwind utilities */
 }
 .home-aesthetic .course-cover-flat .cover-author-flat {
   position: relative; z-index: 1;
   margin-top: 6px;
-  font-size: 12px; color: var(--text3);
-}
-.home-aesthetic .course-cover-flat .level {
-  position: absolute; top: 14px; left: 14px;
+  font-size: 12px;
+  /* color handled by adaptive Tailwind utilities */
 }
 
 @keyframes course-slide-in {
@@ -500,28 +475,20 @@
   margin-top: 4px;
   gap: 4px;
   padding: 6px;
-  border: 1px solid var(--border);
   border-radius: 16px;
-  background: var(--card-glass);
+  /* surface + border handled by adaptive Tailwind utilities */
 }
 .home-aesthetic .course-thumb {
   display: flex; align-items: center; gap: 10px;
   padding: 8px 10px;
   border-radius: 10px;
-  background: transparent;
   border: 0;
-  color: var(--text2);
   cursor: pointer;
   text-align: left;
   font-size: 13px;
-  transition: background-color 200ms ease, color 200ms ease;
   min-height: 36px;
-}
-.home-aesthetic .course-thumb:hover { background: rgba(26, 72, 254, 0.08); color: var(--text1); }
-.home-aesthetic .course-thumb.is-active {
-  background: rgba(26, 72, 254, 0.14);
-  color: var(--text1);
-  font-weight: 500;
+  background: transparent;
+  /* color + hover/active surface handled by adaptive Tailwind utilities */
 }
 .home-aesthetic .course-thumb-title {
   flex: 1; min-width: 0;
@@ -530,29 +497,24 @@
 .home-aesthetic .course-thumb-dot {
   width: 8px; height: 8px; border-radius: 999px;
   flex-shrink: 0;
-  background: var(--blue);
+  /* color handled by adaptive LEVEL_DOT Tailwind utility */
 }
-.home-aesthetic .course-thumb-dot.level-sage { background: rgba(26, 72, 254, 0.55); }
-.home-aesthetic .course-thumb-dot.level-gold { background: var(--blue); }
-.home-aesthetic .course-thumb-dot.level-ink  { background: var(--text1); }
 
 .home-aesthetic .course-slider-controls {
   display: inline-flex; align-items: center; gap: 14px;
 }
 .home-aesthetic .course-nav-btn {
   width: 36px; height: 36px; border-radius: 999px;
-  background: var(--card-glass);
-  border: 1px solid var(--border);
-  color: var(--text2);
   display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer;
-  transition: color 200ms ease, transform 200ms ease, border-color 200ms ease;
+  /* surface, border, color handled by adaptive Tailwind utilities */
 }
-.home-aesthetic .course-nav-btn:hover { color: var(--text1); border-color: var(--text3); transform: scale(1.06); }
+.home-aesthetic .course-nav-btn:hover { transform: scale(1.06); }
 .home-aesthetic .course-counter {
   font-family: ui-monospace, "JetBrains Mono", monospace;
-  font-size: 12px; color: var(--text3); letter-spacing: 0.08em;
+  font-size: 12px; letter-spacing: 0.08em;
   min-width: 60px; text-align: center;
+  /* color handled by adaptive Tailwind utilities */
 }
 
 /* Right — fade-in details */
@@ -569,23 +531,24 @@
 }
 .home-aesthetic .course-detail-meta {
   display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-  font-size: 12px; color: var(--text3);
+  font-size: 12px;
+  /* color handled per-row by adaptive Tailwind utilities */
 }
 .home-aesthetic .course-meta-row { display: inline-flex; align-items: center; gap: 6px; }
 .home-aesthetic .course-detail-title {
-  font-family: var(--font-instrument-serif), Georgia, serif;
-  font-style: italic; font-weight: 400;
   font-size: clamp(28px, 3.2vw, 38px);
   line-height: 1.1; letter-spacing: -0.02em;
-  color: var(--text1);
   margin: 0;
+  /* font-family + weight + color handled by adaptive Tailwind utilities (font-sans font-bold not-italic) */
 }
 .home-aesthetic .course-detail-instructor {
-  font-size: 14px; color: var(--text2);
+  font-size: 14px;
+  /* color handled by adaptive Tailwind utilities */
 }
 .home-aesthetic .course-detail-blurb {
-  font-size: 14.5px; line-height: 1.6; color: var(--text2);
+  font-size: 14.5px; line-height: 1.6;
   margin: 0; max-width: 520px;
+  /* color handled by adaptive Tailwind utilities */
 }
 .home-aesthetic .course-detail-actions {
   display: flex; align-items: center; gap: 16px;
@@ -603,171 +566,76 @@
   .home-aesthetic .course-slider-right { animation: none; opacity: 1; transform: none; }
 }
 
-/* ============== TESTIMONIALS — 3-card stacked carousel ============== */
-.home-aesthetic .testi-stack {
-  position: relative;
-  display: flex; flex-direction: column; align-items: center; gap: 28px;
-  width: 100%;
-}
-.home-aesthetic .testi-stage {
-  position: relative;
-  width: 100%; max-width: 880px;
-  height: 360px;
-  perspective: 1200px;
-}
-.home-aesthetic .testi-deck-card {
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: min(520px, 88vw);
-  max-width: 520px;
-  height: auto;
-  min-height: 280px;
+/* ============== FEEDBACK CARDS — match Events / Courses surface tokens ============== */
+.home-aesthetic .fb-card {
   background: var(--card-glass);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--blue);
-  border-radius: 26px;
-  padding: 28px 30px;
-  display: flex; flex-direction: column; gap: 14px;
   box-shadow: var(--shadow);
-  transform-origin: center;
-  transition: transform 600ms cubic-bezier(.22,1,.36,1),
-              opacity 500ms ease,
-              filter 500ms ease;
-  will-change: transform, opacity;
   backdrop-filter: blur(var(--home-glass-blur)) saturate(140%);
   -webkit-backdrop-filter: blur(var(--home-glass-blur)) saturate(140%);
 }
-.home-aesthetic .stars { display: flex; gap: 3px; color: var(--blue); }
-.home-aesthetic .testi-quote { font-size: 16px; line-height: 1.65; color: var(--text2); margin: 0; font-weight: 300; }
-.home-aesthetic .testi-author { display: flex; align-items: center; gap: 12px; margin-top: auto; padding-top: 8px; }
-.home-aesthetic .testi-name { font-size: 14px; font-weight: 500; color: var(--text1); }
-.home-aesthetic .testi-role { font-size: 12.5px; color: var(--text3); }
-.home-aesthetic .testi-avatar-lg {
-  width: 44px; height: 44px;
-  border-radius: 999px;
-  background: rgba(26,72,254,0.15);
+.home-aesthetic .fb-card-active {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 1px var(--blue), 0 10px 30px rgba(0, 0, 0, 0.18), 0 0 24px rgba(45, 127, 249, 0.15);
+}
+.home-aesthetic .fb-card-side { opacity: 0.72; }
+
+.home-aesthetic .fb-avatar {
+  background: rgba(26, 72, 254, 0.14);
   color: var(--blue);
-  display: inline-flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 600; letter-spacing: 0.02em;
-  overflow: hidden;
   border: 1px solid var(--border);
 }
-.home-aesthetic .testi-avatar-lg img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.home-aesthetic .fb-name { color: var(--text1); }
+.home-aesthetic .fb-role { color: var(--text3); }
+.home-aesthetic .fb-quote { color: var(--text2); margin: 0; font-weight: 300; }
+.home-aesthetic .fb-stars { color: var(--blue); gap: 3px; }
 
-.home-aesthetic .testi-controls {
-  display: flex; align-items: center; gap: 16px;
-}
-.home-aesthetic .testi-nav {
-  width: 38px; height: 38px; border-radius: 999px;
+.home-aesthetic .fb-nav {
   background: var(--card-glass);
   border: 1px solid var(--border);
   color: var(--text2);
-  display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer;
-  transition: color 200ms ease, transform 200ms ease, background-color 200ms ease;
 }
-.home-aesthetic .testi-nav:hover { color: var(--text1); transform: scale(1.06); }
-.home-aesthetic .testi-dots { display: flex; gap: 6px; align-items: center; }
-.home-aesthetic .testi-dot {
-  width: 7px; height: 7px; border-radius: 999px;
+.home-aesthetic .fb-nav:hover {
+  color: var(--text1);
+  border-color: var(--text3);
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+}
+
+.home-aesthetic .fb-dot {
   background: var(--border);
   border: 0; padding: 0; cursor: pointer;
-  transition: background-color 200ms ease, transform 200ms ease;
 }
-.home-aesthetic .testi-dot.is-active {
-  background: var(--blue);
-  transform: scaleX(2.4);
-  border-radius: 999px;
-}
-@media (max-width: 720px) {
-  .home-aesthetic .testi-stage { height: 420px; }
-  .home-aesthetic .testi-deck-card { min-height: 320px; padding: 24px; }
-}
+.home-aesthetic .fb-dot:hover { background: var(--text3); }
+.home-aesthetic .fb-dot-active { background: var(--blue); }
 
 /* ============== FOUNDER ============== */
-.home-aesthetic .founder { background: var(--hbg-surface); padding: 100px 24px; }
-.home-aesthetic .founder-inner {
-  max-width: 1280px; margin: 0 auto;
-  display: grid; grid-template-columns: 320px 1fr; gap: 80px; align-items: start;
-}
-.home-aesthetic .founder-side { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
-.home-aesthetic .founder-photo {
-  position: relative;
-  width: 240px; height: 240px; border-radius: 999px;
-  border: 3px solid var(--haccent);
-  background: var(--hbg-page);
-  overflow: hidden;
-  box-shadow: var(--hshadow-lg);
-  display: flex; align-items: center; justify-content: center;
-}
-.home-aesthetic .founder-name { font-size: 22px; font-weight: 500; color: var(--hink); margin-top: 8px; }
-.home-aesthetic .founder-role { font-size: 14px; color: var(--hink-3); }
-.home-aesthetic .founder-body { position: relative; padding-top: 24px; }
-.home-aesthetic .founder-quote-mark {
-  position: absolute; top: -8px; left: -12px;
-  color: var(--haccent); opacity: 0.16;
-}
-.home-aesthetic .founder-body p {
-  font-size: 19px; line-height: 1.75; color: var(--hink-2); font-weight: 300;
-  margin: 0 0 18px;
-  position: relative; z-index: 1;
-  max-width: 720px;
-}
+/* FOUNDER MESSAGE — styling now owned by Tailwind utilities in FounderMessage.tsx */
+.home-aesthetic .founder { padding: 24px; }
 
-/* ============== FOOTER ============== */
-.home-aesthetic .foot {
-  background: var(--hbg-surface);
-  padding: 56px 32px 32px;
-  border-top: 1px solid var(--hborder);
-  margin-top: 32px;
-}
-.home-aesthetic .foot-top {
-  max-width: 1480px; margin: 0 auto;
-  display: flex; align-items: center; justify-content: space-between; gap: 32px;
-  padding-bottom: 32px;
-  flex-wrap: wrap;
-}
-.home-aesthetic .foot-brand { display: flex; align-items: center; gap: 10px; color: var(--hink); font-weight: 500; font-size: 18px; letter-spacing: -0.02em; }
-.home-aesthetic .foot-brand-mark { font-size: 22px; color: var(--haccent); }
-.home-aesthetic .foot-nav { display: flex; gap: 28px; font-size: 14px; color: var(--hink-3); flex-wrap: wrap; }
-.home-aesthetic .foot-nav a { cursor: pointer; transition: color 180ms ease; text-decoration: none; color: inherit; }
-.home-aesthetic .foot-nav a:hover { color: var(--hink); }
-.home-aesthetic .foot-social { display: flex; gap: 10px; }
-.home-aesthetic .foot-social a {
-  width: 36px; height: 36px; border-radius: 999px;
-  background: var(--hbg-elev); color: var(--hink-2);
-  display: flex; align-items: center; justify-content: center;
-  border: 1px solid var(--hborder);
-  transition: color 180ms ease;
-}
-.home-aesthetic .foot-social a:hover { color: var(--haccent-2); }
-.home-aesthetic .foot-divider { height: 1px; background: var(--hborder); max-width: 1480px; margin: 0 auto; }
-.home-aesthetic .foot-bot {
-  max-width: 1480px; margin: 0 auto;
-  display: flex; justify-content: space-between; align-items: center;
-  padding-top: 24px; font-size: 13px; color: var(--hink-4);
-  flex-wrap: wrap; gap: 16px;
-}
-.home-aesthetic .foot-legal { display: flex; gap: 10px; flex-wrap: wrap; }
-.home-aesthetic .foot-legal a { cursor: pointer; transition: color 180ms ease; text-decoration: none; color: inherit; }
-.home-aesthetic .foot-legal a:hover { color: var(--hink-2); }
+/* FOOTER — styling now owned by Tailwind utilities in components/layout/Footer.tsx */
 
 /* ============== RESPONSIVE ============== */
 @media (max-width: 1100px) {
-  .home-aesthetic .stats-shell { grid-template-columns: repeat(2, 1fr); }
   .home-aesthetic .card-grid,
   .home-aesthetic .testi-grid { grid-template-columns: repeat(2, 1fr); }
-  .home-aesthetic .founder-inner { grid-template-columns: 1fr; gap: 40px; }
 }
 @media (max-width: 720px) {
-  .home-aesthetic .hero-frame { min-height: 620px; }
-  .home-aesthetic .glass-card { left: 16px; bottom: 16px; min-width: 160px; padding: 14px; }
+  .home-aesthetic .hero { padding: 8px; }
+  .home-aesthetic .hero-frame { min-height: 640px; border-radius: 28px; }
+  .home-aesthetic .glass-card {
+    position: relative; left: auto; bottom: auto;
+    margin: 24px auto 0; min-width: 0; width: calc(100% - 32px);
+    padding: 14px 16px; flex-direction: row; align-items: center; justify-content: space-between;
+  }
+  .home-aesthetic .kpi { font-size: 28px; }
   .home-aesthetic .carved { display: none; }
-  .home-aesthetic .stats-shell { grid-template-columns: 1fr 1fr; padding: 28px; gap: 20px; }
   .home-aesthetic .card-grid,
   .home-aesthetic .testi-grid { grid-template-columns: 1fr; }
-  .home-aesthetic .foot-top { flex-direction: column; gap: 20px; align-items: flex-start; }
-  .home-aesthetic .foot-bot { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .home-aesthetic .hero-copy { padding-top: 48px; }
+  .home-aesthetic .sec-head {
+    flex-direction: column; align-items: flex-start; gap: 14px; margin-bottom: 28px;
+  }
+  .home-aesthetic .sec-head h2 { font-size: clamp(24px, 8vw, 32px); }
+  .home-aesthetic .scroll-hint { bottom: 14px; }
 }

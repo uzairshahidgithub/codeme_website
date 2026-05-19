@@ -20,12 +20,7 @@ export default function SignupStep2Page() {
   const router = useRouter()
   const { draft, setDob, setUsername, setGender } = useSignupStore()
 
-  // Guard: step 1 must be complete before arriving here.
-  useEffect(() => {
-    if (!draft.email || !draft.password) {
-      router.replace('/auth/signup')
-    }
-  }, [draft.email, draft.password, router])
+  // Guard removed: User is now authenticated via OTP and middleware ensures they land here.
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null)
   const [checkingUsername, setCheckingUsername] = useState(false)
 
@@ -60,6 +55,13 @@ export default function SignupStep2Page() {
   }, 400)
 
   function onSubmit(data: FormData) {
+    // Hard block: username must be verified available before proceeding
+    if (usernameAvailable === false) return
+    if (usernameAvailable === null && data.username.length >= 3) {
+      // Username hasn't been checked yet — trigger check and block
+      checkUsername(data.username)
+      return
+    }
     setDob(data.dob)
     setUsername(data.username)
     setGender(data.gender)
@@ -168,8 +170,9 @@ export default function SignupStep2Page() {
           variant="primary"
           className="w-[200px] h-[56px] shadow-[0_0_30px_rgba(59,130,246,0.2)]"
           onClick={handleSubmit(onSubmit)}
+          disabled={usernameAvailable === false || checkingUsername}
         >
-          Continue
+          {checkingUsername ? 'Checking…' : 'Continue'}
         </Button>
       </div>
 

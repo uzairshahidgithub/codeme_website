@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { SignupDropdown } from './SignupDropdown'
 import { ProfileDropdown } from './ProfileDropdown'
@@ -58,6 +58,61 @@ function SearchIcon() {
   )
 }
 
+/* ────────────────────────────────────────────────────────────
+   NavBackdrop — TWO permanent layers behind the nav children:
+
+   1. Always-on SOFT BLUR span — backdrop-filter only, 14px
+      radius. "Soft" is the brief: enough to defocus what's
+      behind so navigation reads cleanly, light enough that
+      the page is still recognisably present. No scroll-fade.
+
+   2. Always-on TINT span at MID-RANGE opacity (0.62) — bg
+      colour + border + shadow. The whole layer is set to
+      opacity 0.62 so the chrome reads as a frosted glass
+      pane rather than an opaque bar; the soft blur underneath
+      keeps content legible even at this lower tint weight.
+
+   Why split into two layers? `opacity` on a single element
+   multiplies backdrop-filter blur along with the tint, so
+   dialing the tint down would also weaken the blur. Keeping
+   blur and tint on separate spans means soft + mid-opacity
+   simultaneously — exactly what the brief asked for.
+   ────────────────────────────────────────────────────────── */
+function NavBackdrop() {
+  return (
+    <>
+      {/* Both backdrop layers carry data-nav-bg so the
+          scoped `.navbar-responsive > *:not([data-nav-bg])`
+          rule in the parent leaves their absolute positioning
+          intact (otherwise they'd be forced to position:
+          relative and stack above the nav children). */}
+      <span
+        data-nav-bg
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          borderRadius: 'inherit',
+          backdropFilter: 'blur(14px) saturate(160%)',
+          WebkitBackdropFilter: 'blur(14px) saturate(160%)',
+        }}
+      />
+      <span
+        data-nav-bg
+        aria-hidden="true"
+        style={{
+          borderRadius: 'inherit',
+          background: 'var(--nav-glass)',
+          border: '1px solid var(--border)',
+          boxShadow:
+            'inset 0 1px 0 var(--inner-hi), 0 2px 12px var(--nav-shadow-color, rgba(0,0,0,0.12)), 0 8px 32px var(--nav-shadow-spread, rgba(0,0,0,0.08))',
+          opacity: 0.62,
+        }}
+        className="absolute inset-0 pointer-events-none"
+      />
+    </>
+  )
+}
+
 function CloseIcon() {
   return (
     <svg
@@ -87,6 +142,7 @@ export function Navbar({ isAuthenticated, user }: NavbarProps) {
   // Separate refs for desktop and mobile to avoid conflicts
   const searchWrapperRef = useRef<HTMLDivElement>(null)
   const desktopDropdownRef = useRef<HTMLDivElement>(null)
+  const signupBtnRef = useRef<HTMLButtonElement>(null)
   const mobileSearchBtnRef = useRef<HTMLButtonElement>(null)
   const mobileSearchOverlayRef = useRef<HTMLDivElement>(null)
 
@@ -107,7 +163,13 @@ export function Navbar({ isAuthenticated, user }: NavbarProps) {
       ) {
         setSearchOpen(false)
       }
+      // SignupDropdown lives inside `desktopDropdownRef`, so the
+      // standard "outside-click closes" logic works for it.
+      // ProfileDropdown is portal-rendered OUTSIDE the navbar
+      // tree and manages its own dismissal — skip closing here
+      // when authenticated to avoid double-closing on every click.
       if (
+        !isAuthenticated &&
         desktopDropdownRef.current &&
         !desktopDropdownRef.current.contains(target)
       ) {
@@ -116,7 +178,7 @@ export function Navbar({ isAuthenticated, user }: NavbarProps) {
     }
     document.addEventListener('click', handleClickOutside)
     return () => document.removeEventListener('click', handleClickOutside)
-  }, [])
+  }, [isAuthenticated])
 
   useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
@@ -128,6 +190,17 @@ export function Navbar({ isAuthenticated, user }: NavbarProps) {
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
   }, [])
+
+  const handleSearch = useCallback(
+    (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault()
+      const q = (e.currentTarget.elements.namedItem('q') as HTMLInputElement)?.value.trim()
+      if (!q) return
+      setSearchOpen(false)
+      router.push(`/search?q=${encodeURIComponent(q)}`)
+    },
+    [router],
+  )
 
   return (
     <>
@@ -154,12 +227,26 @@ export function Navbar({ isAuthenticated, user }: NavbarProps) {
             right: 14px;
           }
         }
+        /* Stacking fix — the scroll-fade backdrop is absolutely
+           positioned (data-nav-bg) and would otherwise paint
+           ABOVE the static flex children. Promote every other
+           direct child to its own stacking context so the logo,
+           links, search and CTA always stay on top of the glass. */
+        .navbar-responsive > *:not([data-nav-bg]) {
+          position: relative;
+          z-index: 1;
+        }
       `}</style>
 
       <nav
-        className="fixed z-[300] glass-nav flex items-center select-none transition-all duration-[50ms] navbar-responsive"
+        className="fixed z-[300] flex items-center select-none transition-all duration-[50ms] navbar-responsive"
         aria-label="Main navigation"
       >
+        {/* Scroll-driven glass backdrop — fully transparent at the
+            very top of the page, settles into the existing glass
+            pill by 100px of scroll on #main-content. Sits below
+            the nav children so logo/links/CTA stay fully opaque. */}
+        <NavBackdrop />
         {/* Skip link */}
         <a
           href="#main-content"
@@ -202,9 +289,13 @@ export function Navbar({ isAuthenticated, user }: NavbarProps) {
           {/* Nav links */}
           <div className="flex items-center mr-4" style={{ gap: 'var(--nav-link-gap, 32px)' }}>
             {[
-              { label: 'Join Us', href: '/join-us' },
-              { label: 'Donate', href: '/donate' },
-              { label: 'Contact', href: '/contact' },
+              // Point to routes that actually exist (the previous
+              // `/join-us`, `/donate`, `/contact` paths 404'd). The
+              // donate/contact anchors land on the home sections of
+              // the same name; "Join Us" maps to the team page.
+              { label: 'Join Us', href: '/team' },
+              { label: 'Donate', href: '/#donate' },
+              { label: 'Contact', href: '/#contact' },
             ].map((link) => (
               <Link
                 key={link.href}
@@ -239,30 +330,32 @@ export function Navbar({ isAuthenticated, user }: NavbarProps) {
                 </div>
               </button>
             ) : (
-              <div className="flex items-center gap-2.5 glass-input rounded-[22px] px-4 h-[42px] w-[250px] animate-search-expand search-transition">
+              <form onSubmit={handleSearch} role="search" className="flex items-center gap-2.5 glass-input rounded-[22px] px-4 h-[42px] w-[250px] animate-search-expand search-transition">
                 <input
                   autoFocus
                   type="search"
+                  name="q"
                   placeholder="Search"
-                  aria-label="Search"
-                  onKeyDown={(e) => e.key === 'Escape' && setSearchOpen(false)}
+                  aria-label="Search Codemo"
                   className="bg-transparent border-none outline-none text-text-primary placeholder:text-text-muted font-sans text-body w-full caret-accent-primary"
                   style={{ fontSize: '16px' }}
                 />
                 <button
+                  type="button"
                   onClick={() => setSearchOpen(false)}
                   aria-label="Close search"
                   className="text-text-muted hover:text-text-secondary shrink-0 transition-colors"
                 >
                   <CloseIcon />
                 </button>
-              </div>
+              </form>
             )}
           </div>
 
           {/* Desktop Sign Up / Profile button + dropdown */}
           <div ref={desktopDropdownRef} className="relative shrink-0">
             <button
+              ref={signupBtnRef}
               onClick={() => setDropdownOpen((o) => !o)}
               aria-expanded={dropdownOpen}
               aria-haspopup="true"
@@ -305,17 +398,26 @@ export function Navbar({ isAuthenticated, user }: NavbarProps) {
               </div>
             </button>
 
-            {/* Desktop dropdown — sign up/login tabs OR profile */}
-            {dropdownOpen && (
-              isAuthenticated && user ? (
+            {/* Desktop dropdown — sign up/login tabs OR profile.
+                Profile dropdown renders via portal anchored to the
+                signup button so it can never be clipped by the
+                navbar pill or its stacking context. */}
+            {isAuthenticated && user ? (
+              dropdownOpen && (
                 <ProfileDropdown
                   user={user}
+                  anchorRef={signupBtnRef}
                   onClose={() => setDropdownOpen(false)}
                   onEditProfile={() => setEditProfileOpen(true)}
                   onSettings={() => setSettingsOpen(true)}
                 />
-              ) : (
-                <SignupDropdown onClose={() => setDropdownOpen(false)} />
+              )
+            ) : (
+              dropdownOpen && (
+                <SignupDropdown
+                  anchorRef={signupBtnRef}
+                  onClose={() => setDropdownOpen(false)}
+                />
               )
             )}
           </div>
@@ -382,23 +484,26 @@ export function Navbar({ isAuthenticated, user }: NavbarProps) {
               boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
             }}
           >
-            <input
-              autoFocus
-              type="search"
-              placeholder="Search"
-              aria-label="Search"
-              onKeyDown={(e) => e.key === 'Escape' && setSearchOpen(false)}
-              className="bg-transparent border-none outline-none text-text-primary placeholder:text-text-muted font-sans w-full caret-accent-primary"
-              style={{ fontSize: '16px' }}
-            />
-            <button
-              onClick={() => setSearchOpen(false)}
-              aria-label="Close search"
-              className="text-text-muted hover:text-white shrink-0 transition-colors"
-              style={{ width: '20px', height: '20px' }}
-            >
-              <CloseIcon />
-            </button>
+            <form onSubmit={handleSearch} role="search" className="flex items-center gap-2.5 w-full">
+              <input
+                autoFocus
+                type="search"
+                name="q"
+                placeholder="Search"
+                aria-label="Search Codemo"
+                className="bg-transparent border-none outline-none text-text-primary placeholder:text-text-muted font-sans w-full caret-accent-primary"
+                style={{ fontSize: '16px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setSearchOpen(false)}
+                aria-label="Close search"
+                className="text-text-muted hover:text-white shrink-0 transition-colors"
+                style={{ width: '20px', height: '20px' }}
+              >
+                <CloseIcon />
+              </button>
+            </form>
           </div>
         </div>
       )}

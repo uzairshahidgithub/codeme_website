@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { Check, ChevronDown, CircleAlert, Info, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Chip } from '@/components/ui/Chip'
-import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
 import { useDebouncedCallback } from 'use-debounce'
 import { cn } from '@/lib/utils'
@@ -40,6 +40,24 @@ const schema = z.object({
 })
 type FormData = z.infer<typeof schema>
 
+/* Shared input styling — used for text + DOB inputs.
+
+   IMPORTANT: backgrounds use explicit color-mix() rather
+   than Tailwind's `bg-text-primary/[alpha]` syntax. The
+   token (`--text1`) is a CSS variable, and Tailwind's
+   relative-color-syntax compiler can fail on var()-based
+   colors in some browsers — falling back to opaque white,
+   which was painting the inputs as light boxes in dark
+   mode. color-mix is supported everywhere our autoprefixer
+   targets and gives a deterministic rgba result.
+
+   `--text1` is white-ish in dark mode (#f0f0f0) and
+   near-black in light mode (#0a0a0a), so the same recipe
+   reads as a darker well on the dark card and as a lighter
+   well on the light card. */
+const inputBase =
+  'w-full h-11 rounded-[12px] px-3.5 text-[14px] text-text-primary placeholder:text-text-tertiary outline-none transition-all border border-border-subtle hover:border-border-subtle/80 focus:border-[color:var(--blue)] focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--blue)_18%,transparent)] caret-accent-primary bg-[color:color-mix(in_oklab,var(--text1)_7%,transparent)] hover:bg-[color:color-mix(in_oklab,var(--text1)_10%,transparent)] focus:bg-[color:color-mix(in_oklab,var(--text1)_13%,transparent)]'
+
 function DomainSelect({ value, onChange, error }: { value: string; onChange: (v: string) => void; error?: string }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState(value ?? '')
@@ -47,41 +65,36 @@ function DomainSelect({ value, onChange, error }: { value: string; onChange: (v:
 
   return (
     <div className="relative">
-      <div
-        className="relative flex items-center h-[48px] rounded-xl cursor-text"
-        style={{ background: 'var(--input-glass)', border: '1px solid var(--border)' }}
-        onClick={() => setOpen(true)}
-      >
+      <div className="relative" onClick={() => setOpen(true)}>
         <input
           type="text"
-          placeholder="Career domain…"
+          placeholder="Search domain…"
           value={query}
           onChange={(e) => { setQuery(e.target.value); onChange(e.target.value); setOpen(true) }}
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
-          className="w-full h-full bg-transparent px-4 text-text-primary placeholder:text-text-tertiary outline-none caret-accent-primary"
-          style={{ fontSize: 14 }}
+          className={cn(inputBase, 'pr-10')}
           aria-label="Career domain"
         />
-        <svg
-          className={cn('mr-3 shrink-0 transition-transform duration-200', open && 'rotate-180')}
-          width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-          strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text3)' }} aria-hidden="true"
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+        <ChevronDown
+          size={14}
+          aria-hidden
+          className={cn(
+            'absolute right-3.5 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none transition-transform duration-200',
+            open && 'rotate-180',
+          )}
+        />
       </div>
       {open && filtered.length > 0 && (
         <div
-          className="absolute left-0 right-0 mt-1 z-50 rounded-xl overflow-hidden overflow-y-auto max-h-[180px] py-1"
-          style={{ background: 'var(--card-glass)', border: '1px solid var(--border)', boxShadow: '0 8px 32px rgba(0,0,0,0.25)' }}
+          className="absolute left-0 right-0 mt-1.5 z-50 rounded-[12px] overflow-hidden overflow-y-auto max-h-[200px] py-1 glass-card border border-border-subtle"
+          style={{ boxShadow: 'var(--shadow)' }}
         >
           {filtered.map((d) => (
             <button
               key={d}
               type="button"
-              className="w-full text-left px-4 py-2.5 text-text-primary hover:bg-accent-primary hover:text-white transition-colors"
-              style={{ fontSize: 13 }}
+              className="w-full text-left px-3.5 py-2.5 text-[13px] text-text-primary hover:bg-[color:var(--blue)] hover:text-white transition-colors"
               onMouseDown={(e) => { e.preventDefault(); setQuery(d); onChange(d); setOpen(false) }}
             >
               {d}
@@ -89,7 +102,11 @@ function DomainSelect({ value, onChange, error }: { value: string; onChange: (v:
           ))}
         </div>
       )}
-      {error && <p className="mt-1 text-xs text-text-error">{error}</p>}
+      {error && (
+        <p className="mt-1.5 text-[12px] text-text-error flex items-center gap-1.5">
+          <CircleAlert size={12} aria-hidden /> {error}
+        </p>
+      )}
     </div>
   )
 }
@@ -97,11 +114,15 @@ function DomainSelect({ value, onChange, error }: { value: string; onChange: (v:
 function Field({ id, label, children, error }: { id?: string; label: string; children: React.ReactNode; error?: string }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-text-secondary" style={{ fontSize: 12, fontWeight: 500 }}>
+      <label htmlFor={id} className="text-text-secondary text-[12px] font-medium tracking-wide">
         {label}
       </label>
       {children}
-      {error && <p className="text-xs text-text-error">{error}</p>}
+      {error && (
+        <p className="text-[12px] text-text-error flex items-center gap-1.5">
+          <CircleAlert size={12} aria-hidden /> {error}
+        </p>
+      )}
     </div>
   )
 }
@@ -120,6 +141,7 @@ export function EditProfileDrawer({ open, onClose }: EditProfileDrawerProps) {
   const [checkingUsername, setCheckingUsername] = useState(false)
   const [loading, setLoading] = useState(true)
   const [originalUsername, setOriginalUsername] = useState('')
+  const [userId, setUserId] = useState('')
 
   const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -139,6 +161,7 @@ export function EditProfileDrawer({ open, onClose }: EditProfileDrawerProps) {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setLoading(false); return }
+      setUserId(user.id)
       const meta = user.user_metadata as Record<string, string | undefined>
       const dob = meta.dob ?? ''
       const [yyyy, mm, dd] = dob ? dob.split('-') : ['', '', '']
@@ -163,7 +186,7 @@ export function EditProfileDrawer({ open, onClose }: EditProfileDrawerProps) {
     if (val.length < 3) { setUsernameAvailable(null); return }
     setCheckingUsername(true)
     try {
-      const res = await fetch(`/api/auth/username?q=${encodeURIComponent(val)}`)
+      const res = await fetch(`/api/auth/username?q=${encodeURIComponent(val)}${userId ? `&uid=${userId}` : ''}`)
       const json = (await res.json()) as { available: boolean }
       setUsernameAvailable(json.available)
     } finally { setCheckingUsername(false) }
@@ -174,6 +197,8 @@ export function EditProfileDrawer({ open, onClose }: EditProfileDrawerProps) {
     setServerError('')
     setSaving(true)
     const supabase = createClient()
+
+    // 1. Update auth user_metadata
     const { error } = await supabase.auth.updateUser({
       data: {
         first_name: data.firstName,
@@ -184,8 +209,33 @@ export function EditProfileDrawer({ open, onClose }: EditProfileDrawerProps) {
         status: data.status,
       },
     })
+    if (error) { setSaving(false); setServerError(error.message); return }
+
+    // 2. Sync profiles table (the UNIQUE constraint lives here)
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        username: data.username,
+        first_name: data.firstName,
+        dob: `${data.dobYyyy}-${data.dobMm.padStart(2, '0')}-${data.dobDd.padStart(2, '0')}`,
+        gender: data.gender,
+        domain: data.domain,
+        status: data.status,
+      })
+      .eq('id', userId)
+
     setSaving(false)
-    if (error) { setServerError(error.message); return }
+    if (profileError) {
+      // Username constraint violation
+      if (profileError.code === '23505') {
+        setServerError('That username is already taken.')
+        setUsernameAvailable(false)
+        return
+      }
+      setServerError(profileError.message)
+      return
+    }
+
     setOriginalUsername(data.username)
     setSuccess(true)
     router.refresh()
@@ -195,18 +245,17 @@ export function EditProfileDrawer({ open, onClose }: EditProfileDrawerProps) {
     }, 1200)
   }
 
-  const inputCls = 'w-full h-[48px] rounded-xl px-4 text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-accent-primary caret-accent-primary bg-transparent'
-
   return (
     <Drawer open={open} onClose={onClose} title="Edit Profile">
       {loading ? (
-        <div className="flex items-center justify-center h-48">
-          <p className="text-text-tertiary" style={{ fontSize: 13 }}>Loading…</p>
+        <div className="flex items-center justify-center h-48 gap-2 text-text-tertiary text-[13px]">
+          <Loader2 size={14} className="animate-spin" aria-hidden />
+          Loading your profile…
         </div>
       ) : (
         <form
           onSubmit={(e) => { e.preventDefault(); void handleSubmit(onSubmit)() }}
-          className="flex flex-col gap-5 px-6 py-5"
+          className="flex flex-col gap-5 px-6 py-6"
         >
           {/* Display Name */}
           <Field id="ep-firstName" label="Display Name" error={errors.firstName?.message}>
@@ -214,8 +263,7 @@ export function EditProfileDrawer({ open, onClose }: EditProfileDrawerProps) {
               id="ep-firstName"
               type="text"
               placeholder="Your display name"
-              className={inputCls}
-              style={{ background: 'var(--input-glass)', border: '1px solid var(--border)' }}
+              className={inputBase}
               {...register('firstName')}
             />
           </Field>
@@ -228,16 +276,20 @@ export function EditProfileDrawer({ open, onClose }: EditProfileDrawerProps) {
                 type="text"
                 placeholder="username"
                 autoComplete="username"
-                className={cn(inputCls, 'pr-10')}
-                style={{ background: 'var(--input-glass)', border: '1px solid var(--border)' }}
+                className={cn(inputBase, 'pr-12')}
                 {...register('username', { onChange: (e) => checkUsername(e.target.value) })}
               />
               {username.length >= 3 && username !== originalUsername && (
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs">
-                  {checkingUsername ? '…'
-                    : usernameAvailable === true ? <span className="text-green-400">✓</span>
-                    : usernameAvailable === false ? <span className="text-text-error">✗ taken</span>
-                    : null}
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[12px]">
+                  {checkingUsername ? (
+                    <Loader2 size={12} className="animate-spin text-text-tertiary" aria-hidden />
+                  ) : usernameAvailable === true ? (
+                    <span className="inline-flex items-center gap-1 text-[#22c55e] font-medium">
+                      <Check size={13} aria-hidden /> free
+                    </span>
+                  ) : usernameAvailable === false ? (
+                    <span className="text-text-error font-medium">taken</span>
+                  ) : null}
                 </span>
               )}
             </div>
@@ -247,8 +299,8 @@ export function EditProfileDrawer({ open, onClose }: EditProfileDrawerProps) {
           <Field label="Date of Birth" error={errors.dobDd?.message ?? errors.dobMm?.message ?? errors.dobYyyy?.message}>
             <div className="flex gap-2">
               {[
-                { name: 'dobDd' as const, placeholder: 'DD', max: 2, w: 'w-16' },
-                { name: 'dobMm' as const, placeholder: 'MM', max: 2, w: 'w-16' },
+                { name: 'dobDd' as const, placeholder: 'DD', max: 2, w: 'w-[64px]' },
+                { name: 'dobMm' as const, placeholder: 'MM', max: 2, w: 'w-[64px]' },
                 { name: 'dobYyyy' as const, placeholder: 'YYYY', max: 4, w: 'w-[88px]' },
               ].map(({ name, placeholder, max, w }) => (
                 <input
@@ -257,8 +309,7 @@ export function EditProfileDrawer({ open, onClose }: EditProfileDrawerProps) {
                   inputMode="numeric"
                   maxLength={max}
                   aria-label={placeholder}
-                  className={cn(w, 'h-[48px] rounded-xl text-center text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-accent-primary')}
-                  style={{ background: 'var(--input-glass)', border: '1px solid var(--border)' }}
+                  className={cn(inputBase, w, 'text-center tabular-nums')}
                   {...register(name)}
                 />
               ))}
@@ -290,32 +341,48 @@ export function EditProfileDrawer({ open, onClose }: EditProfileDrawerProps) {
 
           {/* Locked email notice */}
           <div
-            className="rounded-xl px-4 py-3 flex items-center gap-2"
-            style={{ background: 'var(--input-glass)', border: '1px solid var(--border)' }}
+            className="rounded-[12px] px-3.5 py-3 flex items-center gap-2 border border-border-subtle bg-[color:color-mix(in_oklab,var(--text1)_6%,transparent)]"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-tertiary shrink-0" aria-hidden="true">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            <p className="text-text-tertiary" style={{ fontSize: 11 }}>
-              Email address cannot be changed. Contact support if needed.
+            <Info size={13} className="text-text-tertiary shrink-0" aria-hidden />
+            <p className="text-text-tertiary text-[11.5px] leading-snug">
+              Email address cannot be changed here. Contact support if you need to update it.
             </p>
           </div>
 
-          {serverError && <p className="text-center text-sm text-text-error">{serverError}</p>}
-          {success && <p className="text-center text-sm" style={{ color: '#22c55e' }}>Saved successfully.</p>}
+          {/* Server feedback */}
+          {serverError && (
+            <p className="rounded-[10px] px-3 py-2 text-[12.5px] text-text-error bg-[color:color-mix(in_oklab,#ff5c5c_10%,transparent)] border border-[color:color-mix(in_oklab,#ff5c5c_30%,transparent)]">
+              {serverError}
+            </p>
+          )}
+          {success && (
+            <p className="rounded-[10px] px-3 py-2 text-[12.5px] text-[#22c55e] bg-[color:color-mix(in_oklab,#22c55e_10%,transparent)] border border-[color:color-mix(in_oklab,#22c55e_30%,transparent)] flex items-center gap-2">
+              <Check size={14} aria-hidden /> Saved successfully.
+            </p>
+          )}
 
-          <div className="flex justify-center pt-1 pb-2">
-            <Button
-              variant="primary"
-              className="w-[180px] h-[46px]"
-              onClick={handleSubmit(onSubmit)}
+          {/* Sticky action bar */}
+          <div className="flex items-center justify-end gap-2 pt-3 mt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-11 px-4 rounded-full text-[13.5px] font-medium text-text-secondary hover:text-text-primary hover:bg-text-primary/[0.05] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
               disabled={saving || usernameAvailable === false}
               aria-busy={saving}
+              className="inline-flex items-center gap-1.5 h-11 px-5 rounded-full text-[13.5px] font-medium text-white transition-all disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+              style={{
+                background: 'var(--blue)',
+                boxShadow: '0 8px 20px -10px color-mix(in oklab, var(--blue) 65%, transparent)',
+              }}
             >
-              {saving ? 'Saving…' : 'Save Changes'}
-            </Button>
+              {saving && <Loader2 size={14} className="animate-spin" aria-hidden />}
+              {saving ? 'Saving…' : 'Save changes'}
+            </button>
           </div>
         </form>
       )}

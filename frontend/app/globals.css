@@ -116,6 +116,24 @@
     --text-link: var(--blue);
     --text-error: #FF5C5C;
     --border-subtle: var(--border);
+
+    /* Neo-Bento accent palette — assigned per-tile to give the grid
+       a maximalist multi-color feel without losing brand cohesion.
+       Light-mode values: slightly desaturated for cream surfaces. */
+    --accent-saffron:  #F5A524;
+    --accent-coral:    #FF6F61;
+    --accent-lime:     #84CC16;
+    --accent-lavender: #8B7BFF;
+    --accent-rose:     #EC4899;
+
+    --accent-saffron-ink:  #2A1E08;
+    --accent-coral-ink:    #2A0F0B;
+    --accent-lime-ink:     #122001;
+    --accent-lavender-ink: #150F2A;
+
+    /* Tile foreground tokens (used inside colored bento tiles) */
+    --tile-ink:        #0a0a0a;
+    --tile-ink-muted:  rgba(10, 10, 10, 0.62);
   }
 
   .dark {
@@ -143,6 +161,10 @@
     --nav-shadow-color: rgba(0, 0, 0, 0.55);
     --nav-shadow-spread: rgba(0, 0, 0, 0.30);
     --blur: blur(var(--glass-blur)) saturate(200%);
+
+    /* Dark-mode tile inks — high contrast against vivid bento backgrounds. */
+    --tile-ink:        #f5f5f7;
+    --tile-ink-muted:  rgba(245, 245, 247, 0.62);
   }
 
   body {
@@ -573,6 +595,77 @@
     flex: 0 0 calc(100% - 48px);
   }
 
+  /* Generic hidden-scrollbar utility (used by horizontal scroll-snap rails) */
+  .hide-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+
+  /* Premium mesh-gradient backdrop for hero/contact banners.
+     Layered radial gradients give a soft "Vercel × Masterclass" wash that
+     reads on both light and dark surfaces. */
+  .mesh-gradient {
+    background:
+      radial-gradient(at 18% 22%, rgba(26, 72, 254, 0.18) 0px, transparent 50%),
+      radial-gradient(at 82% 12%, rgba(107, 140, 255, 0.14) 0px, transparent 50%),
+      radial-gradient(at 75% 88%, rgba(26, 72, 254, 0.12) 0px, transparent 55%),
+      radial-gradient(at 15% 90%, rgba(45, 127, 249, 0.10) 0px, transparent 50%);
+  }
+  .dark .mesh-gradient {
+    background:
+      radial-gradient(at 18% 22%, rgba(26, 72, 254, 0.32) 0px, transparent 50%),
+      radial-gradient(at 82% 12%, rgba(107, 140, 255, 0.20) 0px, transparent 50%),
+      radial-gradient(at 75% 88%, rgba(26, 72, 254, 0.22) 0px, transparent 55%),
+      radial-gradient(at 15% 90%, rgba(45, 127, 249, 0.18) 0px, transparent 50%);
+  }
+
+  /* Gradient text — premium blue wash for editorial hero accent words. */
+  .gradient-text-blue {
+    background: linear-gradient(120deg, #1a48fe 0%, #4b7bff 45%, #7aa1ff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Subtle border-glow used by the Contact "Reach Out" banner. */
+  .border-glow {
+    position: relative;
+  }
+  .border-glow::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg,
+      rgba(26, 72, 254, 0.55) 0%,
+      rgba(26, 72, 254, 0.05) 35%,
+      rgba(26, 72, 254, 0.05) 65%,
+      rgba(122, 161, 255, 0.45) 100%);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Stagger-friendly fade-up animation — used by hero copy. */
+  @keyframes hero-rise {
+    from { opacity: 0; transform: translate3d(0, 18px, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+  .hero-rise {
+    opacity: 0;
+    animation: hero-rise 720ms cubic-bezier(.22, 1, .36, 1) forwards;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-rise { animation: none; opacity: 1; }
+  }
+
   /* Reduced motion: disable transitions */
   @media (prefers-reduced-motion: reduce) {
     .sidebar-transition {
@@ -724,5 +817,583 @@
   }
   .alive-danger:hover {
     box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);
+  }
+
+  /* ──────────────────────────────────────────────────────────────────
+     NEO-BENTO — Maximalist tile system used by the homepage redesign.
+     Each tile is a self-contained color study; the grid composes them
+     into an editorial bento. All measurements scale with viewport.
+     ────────────────────────────────────────────────────────────────── */
+
+  /* Base tile — neutral surface, ink follows theme. */
+  .bento-tile {
+    position: relative;
+    overflow: hidden;
+    border-radius: 28px;
+    background: var(--card-glass);
+    border: 1px solid var(--border);
+    box-shadow:
+      inset 0 1px 0 var(--inner-hi),
+      0 24px 48px -28px rgba(0, 0, 0, 0.35);
+    transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 360ms ease,
+                border-color 360ms ease;
+  }
+  .bento-tile:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Painted (color-tinted) variants — ink forced to tile-ink token */
+  .bento-tile--paint {
+    color: var(--tile-ink);
+    border-color: transparent;
+  }
+  .bento-tile--paint .bento-muted { color: var(--tile-ink-muted); }
+
+  /* Saffron — Codemo "now" energy */
+  .bento-tile--saffron {
+    background:
+      radial-gradient(120% 100% at 100% 0%, rgba(255, 255, 255, 0.35) 0%, transparent 55%),
+      linear-gradient(150deg, #F8C56A 0%, #F5A524 55%, #E08400 100%);
+    --tile-ink: var(--accent-saffron-ink);
+    --tile-ink-muted: rgba(42, 30, 8, 0.65);
+  }
+  .dark .bento-tile--saffron {
+    background:
+      radial-gradient(120% 100% at 100% 0%, rgba(255, 255, 255, 0.18) 0%, transparent 55%),
+      linear-gradient(150deg, #FFB627 0%, #E08400 60%, #8C4F00 100%);
+    --tile-ink: #0d0904;
+    --tile-ink-muted: rgba(13, 9, 4, 0.62);
+  }
+
+  /* Coral — community warmth */
+  .bento-tile--coral {
+    background:
+      radial-gradient(140% 100% at 0% 0%, rgba(255, 255, 255, 0.35) 0%, transparent 55%),
+      linear-gradient(150deg, #FFA38B 0%, #FF6F61 55%, #D63E3E 100%);
+    --tile-ink: var(--accent-coral-ink);
+    --tile-ink-muted: rgba(42, 15, 11, 0.65);
+  }
+  .dark .bento-tile--coral {
+    background:
+      radial-gradient(140% 100% at 0% 0%, rgba(255, 255, 255, 0.18) 0%, transparent 55%),
+      linear-gradient(150deg, #FF6F61 0%, #D63E3E 60%, #6E1B1B 100%);
+  }
+
+  /* Lime — growth / new */
+  .bento-tile--lime {
+    background:
+      radial-gradient(120% 100% at 100% 100%, rgba(255, 255, 255, 0.35) 0%, transparent 55%),
+      linear-gradient(150deg, #C7F261 0%, #84CC16 60%, #3F7012 100%);
+    --tile-ink: var(--accent-lime-ink);
+    --tile-ink-muted: rgba(18, 32, 1, 0.65);
+  }
+  .dark .bento-tile--lime {
+    background:
+      radial-gradient(120% 100% at 100% 100%, rgba(255, 255, 255, 0.18) 0%, transparent 55%),
+      linear-gradient(150deg, #B5FF3D 0%, #84CC16 50%, #2B4708 100%);
+    --tile-ink: #0a1300;
+    --tile-ink-muted: rgba(10, 19, 0, 0.65);
+  }
+
+  /* Lavender — cerebral / learning */
+  .bento-tile--lavender {
+    background:
+      radial-gradient(120% 100% at 0% 100%, rgba(255, 255, 255, 0.35) 0%, transparent 55%),
+      linear-gradient(150deg, #B6ABFF 0%, #8B7BFF 55%, #5641CC 100%);
+    --tile-ink: var(--accent-lavender-ink);
+    --tile-ink-muted: rgba(21, 15, 42, 0.65);
+  }
+  .dark .bento-tile--lavender {
+    background:
+      radial-gradient(120% 100% at 0% 100%, rgba(255, 255, 255, 0.18) 0%, transparent 55%),
+      linear-gradient(150deg, #9D8DFF 0%, #6048E3 60%, #2D1F7F 100%);
+    --tile-ink: #f5f5f7;
+    --tile-ink-muted: rgba(245, 245, 247, 0.72);
+  }
+
+  /* Codemo Blue — the brand anchor tile */
+  .bento-tile--blue {
+    background:
+      radial-gradient(120% 100% at 100% 0%, rgba(255, 255, 255, 0.20) 0%, transparent 55%),
+      linear-gradient(150deg, #4B7BFF 0%, #1a48fe 55%, #0A2BB8 100%);
+    --tile-ink: #ffffff;
+    --tile-ink-muted: rgba(255, 255, 255, 0.72);
+  }
+
+  /* Ink (near-black) — for inverted moments */
+  .bento-tile--ink {
+    background:
+      radial-gradient(120% 80% at 0% 0%, rgba(255, 255, 255, 0.06) 0%, transparent 50%),
+      linear-gradient(180deg, #0F0F12 0%, #06060A 100%);
+    --tile-ink: #f5f5f7;
+    --tile-ink-muted: rgba(245, 245, 247, 0.62);
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  /* Paper (cream) — for editorial moments in light mode */
+  .bento-tile--paper {
+    background: #FDFBF3;
+    --tile-ink: #0a0a0a;
+    --tile-ink-muted: rgba(10, 10, 10, 0.62);
+    border-color: rgba(0, 0, 0, 0.08);
+  }
+  .dark .bento-tile--paper {
+    background: #1A1813;
+    --tile-ink: #F5F0DD;
+    --tile-ink-muted: rgba(245, 240, 221, 0.62);
+    border-color: rgba(245, 240, 221, 0.10);
+  }
+
+  /* Tile motifs — overlay textures composed on top of paint */
+  .bento-grid-overlay::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(0, 0, 0, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: radial-gradient(ellipse at 50% 50%, black 30%, transparent 90%);
+    pointer-events: none;
+  }
+  .dark .bento-grid-overlay::before {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  }
+
+  .bento-noise::after {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.18;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+  }
+
+  /* Tag chip used inside bento tiles — picks up tile-ink automatically */
+  .bento-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px 5px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--tile-ink);
+    background: rgba(0, 0, 0, 0.10);
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(8px);
+  }
+  .bento-tile--blue .bento-chip,
+  .bento-tile--ink .bento-chip,
+  .bento-tile--lavender .bento-chip {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.22);
+  }
+  .dark .bento-tile--saffron .bento-chip,
+  .dark .bento-tile--coral .bento-chip,
+  .dark .bento-tile--lime .bento-chip {
+    background: rgba(0, 0, 0, 0.18);
+    border-color: rgba(0, 0, 0, 0.30);
+  }
+
+  .bento-chip-dot {
+    width: 6px; height: 6px; border-radius: 999px;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+  }
+
+  /* Big oversized numeral used as tile decoration */
+  .bento-numeral {
+    font-family: var(--font-bricolage, var(--font-poppins)), system-ui, sans-serif;
+    font-feature-settings: 'ss01' on, 'tnum' on;
+    font-weight: 700;
+    line-height: 0.85;
+    letter-spacing: -0.06em;
+    color: var(--tile-ink);
+  }
+
+  /* Editorial line — Fraunces italic */
+  .bento-editorial {
+    font-family: var(--font-fraunces, Georgia), serif;
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    font-feature-settings: 'ss01' on;
+  }
+
+  /* Display headline — Bricolage at tight tracking */
+  .bento-display {
+    font-family: var(--font-bricolage, var(--font-poppins)), system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 0.94;
+  }
+
+  /* Mono tag — fixed-width retro label */
+  .bento-mono-tag {
+    font-family: var(--font-geist-mono, ui-monospace), monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--tile-ink-muted);
+  }
+
+  /* Pulsing dot — used for "live" indicators */
+  .bento-live-dot {
+    position: relative;
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 999px;
+    background: #ff3b30;
+    box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.6);
+  }
+  .bento-live-dot::after {
+    content: '';
+    position: absolute; inset: -2px;
+    border-radius: 999px;
+    border: 1.5px solid #ff3b30;
+    animation: pulse-ring 2.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+
+  /* Tile arrow CTA — auto-tints to tile ink */
+  .bento-arrow-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 18px 11px 22px;
+    border-radius: 999px;
+    background: var(--tile-ink);
+    color: var(--bg, #fff);
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: -0.01em;
+    transition: transform 200ms ease, gap 200ms ease, box-shadow 240ms ease;
+  }
+  .bento-arrow-cta:hover {
+    gap: 14px;
+    transform: translateY(-1px);
+    box-shadow: 0 12px 28px -10px rgba(0, 0, 0, 0.35);
+  }
+  .bento-arrow-cta-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+  }
+  .bento-tile--paper .bento-arrow-cta,
+  .bento-tile--saffron .bento-arrow-cta,
+  .bento-tile--coral .bento-arrow-cta,
+  .bento-tile--lime .bento-arrow-cta {
+    background: #0a0a0a;
+    color: #fff;
+  }
+  .bento-tile--ink .bento-arrow-cta,
+  .bento-tile--blue .bento-arrow-cta,
+  .bento-tile--lavender .bento-arrow-cta {
+    background: #fff;
+    color: #0a0a0a;
+  }
+  .bento-tile--ink .bento-arrow-cta-icon,
+  .bento-tile--blue .bento-arrow-cta-icon,
+  .bento-tile--lavender .bento-arrow-cta-icon {
+    background: rgba(10, 10, 10, 0.10);
+  }
+
+  /* Section eyebrow — used on top of each redesigned section */
+  .section-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-geist-mono, ui-monospace), monospace;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text2);
+  }
+  .section-eyebrow::before {
+    content: '';
+    width: 28px; height: 1px;
+    background: var(--blue);
+  }
+
+  /* Marquee container — fades edges */
+  .marquee-fade {
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
+            mask-image: linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%);
+  }
+
+  /* Sparkle decoration */
+  .bento-sparkle {
+    position: absolute;
+    pointer-events: none;
+    color: var(--tile-ink);
+    animation: sparkle 2.4s ease-in-out infinite;
+  }
+
+  /* Stagger helper — children get incrementing delays via --i */
+  .stagger > * {
+    animation: tile-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--i, 0) * 90ms);
+  }
+
+  /* ──────────────────────────────────────────────────────────────────
+     TECH-MINIMAL SURFACES
+     Glassmorphic containers, hairline gradient borders and grid-mask
+     backgrounds used by the refactored home modules. Replace heavy
+     painted bento tiles with these whenever we want a quieter, more
+     "premium tech vibes" surface.
+     ────────────────────────────────────────────────────────────────── */
+
+  /* Glass card — used for popups (signup, profile, donate
+     modal, AddToCalendar dropdown). Surface opacity bumped
+     so popups read SOLID rather than translucent against
+     the page beneath them. Backdrop blur kept for the
+     ambient frosting effect when something colourful is
+     behind the surface. */
+  .glass-card {
+    position: relative;
+    background:
+      linear-gradient(180deg, rgba(252, 252, 254, 0.96) 0%, rgba(248, 249, 252, 0.93) 100%);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border-radius: 22px;
+    transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
+                border-color 320ms ease;
+  }
+  .dark .glass-card {
+    background:
+      linear-gradient(180deg, rgba(20, 22, 26, 0.96) 0%, rgba(14, 16, 20, 0.93) 100%);
+  }
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg,
+      rgba(0, 0, 0, 0.10),
+      rgba(0, 0, 0, 0.02) 40%,
+      rgba(0, 0, 0, 0.10) 100%);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+  .dark .glass-card::before {
+    background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.10),
+      rgba(255, 255, 255, 0.02) 40%,
+      rgba(255, 255, 255, 0.10) 100%);
+  }
+
+  /* Subtle interior grid mask */
+  .grid-mask {
+    background-image:
+      linear-gradient(to right, rgba(0, 0, 0, 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.045) 1px, transparent 1px);
+    background-size: 28px 28px;
+    -webkit-mask-image: radial-gradient(ellipse at 50% 0%, black 0%, transparent 80%);
+            mask-image: radial-gradient(ellipse at 50% 0%, black 0%, transparent 80%);
+  }
+  .dark .grid-mask {
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.055) 1px, transparent 1px);
+  }
+
+  /* ─── Spotlight card ─── */
+  .spotlight-card {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    border-radius: 22px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.40) 100%);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 380ms ease;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.5) inset,
+      0 24px 48px -32px rgba(0, 0, 0, 0.18);
+  }
+  .dark .spotlight-card {
+    background:
+      linear-gradient(180deg, rgba(20, 22, 26, 0.65) 0%, rgba(14, 16, 20, 0.42) 100%);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.06) inset,
+      0 24px 64px -36px rgba(0, 0, 0, 0.85);
+  }
+  .spotlight-card:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.6) inset,
+      0 36px 72px -32px rgba(0, 0, 0, 0.22),
+      0 0 0 1px color-mix(in oklab, var(--spot-accent, var(--blue)) 26%, transparent);
+  }
+  .dark .spotlight-card:hover {
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.08) inset,
+      0 36px 96px -32px rgba(0, 0, 0, 0.95),
+      0 0 0 1px color-mix(in oklab, var(--spot-accent, var(--blue)) 30%, transparent);
+  }
+
+  /* Hairline rim catches the spot */
+  .spotlight-card-rim {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background:
+      radial-gradient(220px circle at var(--spot-x, 50%) var(--spot-y, -50%),
+        var(--spot-accent, var(--blue)) 0%,
+        transparent 70%),
+      linear-gradient(135deg,
+        rgba(0, 0, 0, 0.10),
+        rgba(0, 0, 0, 0.04) 40%,
+        rgba(0, 0, 0, 0.12) 100%);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    opacity: 0.8;
+    transition: opacity 320ms ease;
+  }
+  .dark .spotlight-card-rim {
+    background:
+      radial-gradient(220px circle at var(--spot-x, 50%) var(--spot-y, -50%),
+        var(--spot-accent, var(--blue)) 0%,
+        transparent 70%),
+      linear-gradient(135deg,
+        rgba(255, 255, 255, 0.12),
+        rgba(255, 255, 255, 0.03) 40%,
+        rgba(255, 255, 255, 0.10) 100%);
+  }
+  .spotlight-card:hover .spotlight-card-rim {
+    opacity: 1;
+  }
+
+  /* Inner halo */
+  .spotlight-card-halo {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(360px circle at var(--spot-x, 50%) var(--spot-y, -50%),
+      color-mix(in oklab, var(--spot-accent, var(--blue)) calc(var(--spot-intensity, 0.16) * 100%), transparent) 0%,
+      transparent 60%);
+    opacity: 0;
+    transition: opacity 320ms ease;
+    z-index: 0;
+  }
+  .spotlight-card:hover .spotlight-card-halo {
+    opacity: 1;
+  }
+
+  /* Pulsing status dot */
+  .status-dot {
+    position: relative;
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+  .status-dot::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    border: 1px solid currentColor;
+    opacity: 0.5;
+    animation: status-pulse 1800ms cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+  @keyframes status-pulse {
+    0%   { transform: scale(0.6); opacity: 0.7; }
+    70%  { transform: scale(1.4); opacity: 0; }
+    100% { transform: scale(1.4); opacity: 0; }
+  }
+
+  /* Micro mono caption used in place of heavy 01 / 02 numerals */
+  .mono-rank {
+    font-family: var(--font-geist-mono, ui-monospace), monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text2);
+  }
+
+  /* Underline-from-left link */
+  .link-trail {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .link-trail::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -3px;
+    height: 1px;
+    width: 0%;
+    background: currentColor;
+    transition: width 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .link-trail:hover::after { width: 100%; }
+
+  /* Custom range slider — Codemo accent */
+  .codemo-slider {
+    -webkit-appearance: none;
+       -moz-appearance: none;
+            appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 999px;
+    background:
+      linear-gradient(90deg, var(--blue) 0%, var(--blue) var(--fill, 0%),
+        color-mix(in oklab, var(--text3) 18%, transparent) var(--fill, 0%),
+        color-mix(in oklab, var(--text3) 18%, transparent) 100%);
+    outline: none;
+    cursor: pointer;
+  }
+  .codemo-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: #fff;
+    border: 2px solid var(--blue);
+    box-shadow:
+      0 4px 10px -2px color-mix(in oklab, var(--blue) 55%, transparent),
+      0 0 0 6px color-mix(in oklab, var(--blue) 18%, transparent);
+    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 220ms ease;
+  }
+  .codemo-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.08);
+  }
+  .codemo-slider::-webkit-slider-thumb:active {
+    transform: scale(0.96);
+  }
+  .codemo-slider::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: #fff;
+    border: 2px solid var(--blue);
+    box-shadow:
+      0 4px 10px -2px color-mix(in oklab, var(--blue) 55%, transparent),
+      0 0 0 6px color-mix(in oklab, var(--blue) 18%, transparent);
   }
 }

@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: '*.supabase.co' },
     ],
   },
+  allowedDevOrigins: ['127.0.0.1', 'localhost', '0.0.0.0'],
   // Security headers are applied in middleware.ts for nonce support.
   // Redundant static headers here as belt-and-suspenders.
   async headers() {

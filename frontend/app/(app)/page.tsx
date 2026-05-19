@@ -1,20 +1,22 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
-import '@/app/home-aesthetic.css'
 import { Hero } from '@/components/home/Hero'
-import { HomeStats } from '@/components/home/HomeStats'
 import { EventsHighlights, EventsSkeleton } from '@/components/home/EventsHighlights'
 import { CourseHighlights, CourseSkeletonStrip } from '@/components/home/CourseHighlights'
 import { Testimonials } from '@/components/home/Testimonials'
 import { FounderMessage } from '@/components/home/FounderMessage'
+import { DonateSection } from '@/components/home/DonateSection'
+import { ContactSection } from '@/components/home/ContactSection'
+import { ScrollAmbient } from '@/components/home/ScrollAmbient'
+import { CustomCursor } from '@/components/home/CustomCursor'
 import { Footer } from '@/components/layout/Footer'
 
 export const metadata: Metadata = {
-  title: 'Codemo Teams — Community of Future Tech Leaders',
+  title: 'Codemo Teams',
   description:
-    'Join a community of developers solving real problems together. Events, eLearn courses, projects and career support for builders worldwide.',
+    'A workshop, a Discord, a syllabus and a network — wired together so curious learners become shipping engineers.',
   openGraph: {
-    title: 'Codemo Teams — Community of Future Tech Leaders',
+    title: 'Codemo Teams',
     description:
       'Join a community of developers solving real problems together. Events, eLearn courses, projects and career support for builders worldwide.',
     type: 'website',
@@ -23,7 +25,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Codemo Teams — Community of Future Tech Leaders',
+    title: 'Codemo Teams',
     description: 'Community of developers building together.',
   },
 }
@@ -35,37 +37,53 @@ const ORGANIZATION_JSONLD = {
   url: 'https://codemoteam.org',
   description: 'A community of future tech leaders building solutions together.',
   sameAs: [
-    'https://github.com/uzairshahidgithub/Codemo-Website',
     'https://www.linkedin.com/company/codemo-teams',
+    'https://www.youtube.com/@codemoteams',
+    'https://www.instagram.com/codemoteams',
   ],
 }
 
 export default function HomePage() {
   return (
-    <div className="home-aesthetic flex flex-col w-full">
+    /* NO overflow-hidden on this wrapper.
+       Per CSS spec, any ancestor with overflow:hidden becomes
+       the "scrolling ancestor" for descendant sticky elements
+       — but a hidden ancestor never scrolls, so any nested
+       sticky (e.g. CourseDeck) silently fails to pin. The
+       rounded-corner clip lives on the Hero section itself
+       instead (Hero already has its own overflow-hidden). */
+    <div className="relative flex flex-col w-full">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_JSONLD) }}
       />
 
+      {/* Page-wide scroll-linked ambient backdrop */}
+      <ScrollAmbient />
+      {/* Simple O'Reilly-style cursor — fine pointers only */}
+      <CustomCursor />
+
       <Hero />
-      <HomeStats />
+
+      {/* Courses repositioned above Events */}
+      <Suspense fallback={<CourseSkeletonStrip />}>
+        <CourseHighlights />
+      </Suspense>
 
       <Suspense fallback={<EventsSkeleton />}>
         <EventsHighlights />
       </Suspense>
 
-      <Suspense fallback={<CourseSkeletonStrip />}>
-        <CourseHighlights />
+      <Suspense fallback={null}>
+        <FounderMessage />
       </Suspense>
 
       <Suspense fallback={null}>
         <Testimonials />
       </Suspense>
 
-      <Suspense fallback={null}>
-        <FounderMessage />
-      </Suspense>
+      <DonateSection />
+      <ContactSection />
 
       <Footer />
     </div>

@@ -1,8 +1,17 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
 import { useThemeStore } from '@/stores/theme'
 import { AnimatedQuote } from '@/components/ui/AnimatedQuote'
 import { CodemoLogo } from '@/components/ui/CodemoLogo'
+
+/* Routes that should render OUTSIDE the desktop/mobile dual
+   grid the rest of /auth uses. The onboarding welcome screen
+   owns its own chrome (gaussian-blur backdrop, full-bleed
+   typography) and gets cut in half if it has to live inside
+   .auth-col-right's 420px max-width constraint — that's why
+   the page was reading as visually empty. */
+const FULL_BLEED_AUTH_ROUTES = new Set<string>(['/auth/onboarding'])
 
 /**
  * AuthDesktopLogo — uses correctly-cropped SVGs.
@@ -28,6 +37,23 @@ function AuthDesktopLogo() {
 }
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+
+  // Full-bleed routes (e.g. /auth/onboarding welcome screen)
+  // render outside the desktop quote-grid AND the mobile
+  // centred-column. They draw their own background and
+  // their own chrome — wrapping them in the grid would
+  // double-render the page (children appear once in
+  // .auth-desktop and once in .auth-mobile) and pin them
+  // to a 420px column on the right side of the viewport.
+  if (FULL_BLEED_AUTH_ROUTES.has(pathname)) {
+    return (
+      <div className="relative h-screen w-full bg-bg-base overflow-hidden">
+        {children}
+      </div>
+    )
+  }
+
   return (
     <div className="relative h-screen w-full bg-bg-base overflow-y-auto overflow-x-hidden">
       <style>{`

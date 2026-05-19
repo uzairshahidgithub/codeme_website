@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
+import { ScrollMaskReveal } from './ScrollMaskReveal'
 
 interface FounderContent {
   name: string
@@ -34,45 +35,88 @@ const fetchFounder = unstable_cache(
       name: v.name ?? FALLBACK.name,
       role: v.role ?? FALLBACK.role,
       photo_url: v.photo_url ?? null,
-      paragraphs: Array.isArray(v.paragraphs) && v.paragraphs.length > 0 ? v.paragraphs : FALLBACK.paragraphs,
+      paragraphs:
+        Array.isArray(v.paragraphs) && v.paragraphs.length > 0
+          ? v.paragraphs
+          : FALLBACK.paragraphs,
     }
   },
   ['home:founder'],
   { revalidate: 3600, tags: ['site_content'] },
 )
 
-function QuoteMark() {
-  return (
-    <svg className="founder-quote-mark" viewBox="0 0 100 80" width="120" height="96" fill="currentColor" aria-hidden="true">
-      <path d="M0 50c0-22 14-40 36-46v12c-12 6-20 18-20 30h20v34H0V50zm56 0c0-22 14-40 36-46v12c-12 6-20 18-20 30h20v34H56V50z"/>
-    </svg>
-  )
-}
-
 export async function FounderMessage() {
   const f = await fetchFounder()
+  const initials = f.name
+    .split(' ')
+    .map((s) => s[0] ?? '')
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+  const [first, ...rest] = f.paragraphs
 
   return (
-    <section className="founder" data-screen-label="06 Founder">
-      <div className="founder-inner">
-        <aside className="founder-side">
-          <div className="founder-photo">
-            {f.photo_url ? (
-              <Image src={f.photo_url} alt={`${f.name} portrait`} fill sizes="240px" className="object-cover" />
-            ) : (
-              <>
-                <div className="banner-stripes" />
-                <span className="banner-tag">founder photo</span>
-              </>
+    <section data-screen-label="06 Founder" className="px-4 md:px-8 py-10 md:py-24">
+      <div className="max-w-[1100px] mx-auto">
+        <article className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-14 items-start">
+          {/* Circular avatar with thin stroke ring */}
+          <aside className="md:col-span-3 flex md:block">
+            <div
+              className="
+                relative w-[140px] h-[140px] md:w-[168px] md:h-[168px]
+                rounded-full overflow-hidden
+                ring-[1.5px] ring-border-subtle
+                shadow-[0_24px_60px_-30px_color-mix(in_oklab,var(--blue)_55%,transparent)]
+              "
+              style={{ background: 'color-mix(in oklab, var(--text1) 4%, transparent)' }}
+            >
+              <span
+                aria-hidden="true"
+                className="absolute -inset-4 rounded-full -z-10 blur-2xl opacity-70"
+                style={{ background: 'radial-gradient(circle, color-mix(in oklab, var(--blue) 26%, transparent), transparent 70%)' }}
+              />
+              {f.photo_url ? (
+                <Image
+                  src={f.photo_url}
+                  alt={`${f.name} portrait`}
+                  fill
+                  sizes="168px"
+                  className="object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center font-sans font-medium tracking-[-0.04em] text-text-secondary text-[56px]">
+                  {initials}
+                </div>
+              )}
+            </div>
+          </aside>
+
+          {/* Editorial copy with scroll-velocity mask reveal */}
+          <div className="md:col-span-9 flex flex-col gap-6">
+            {first && (
+              <ScrollMaskReveal
+                text={first}
+                className="font-sans font-light tracking-[-0.02em] text-text-primary leading-snug"
+                style={{ fontSize: 'clamp(19px, 3vw, 32px)' }}
+              />
             )}
+
+            <div className="space-y-4 max-w-prose">
+              {rest.map((p, i) => (
+                <ScrollMaskReveal
+                  key={i}
+                  text={p}
+                  className="text-[15px] md:text-[16px] leading-[1.7] text-text-secondary font-light"
+                />
+              ))}
+            </div>
+
+            <footer className="pt-6 border-t border-border-subtle/70">
+              <div className="text-sm font-medium text-text-primary">{f.name}</div>
+              <div className="text-xs text-text-tertiary mt-1">{f.role}</div>
+            </footer>
           </div>
-          <div className="founder-name">{f.name}</div>
-          <div className="founder-role">{f.role}</div>
-        </aside>
-        <div className="founder-body">
-          <QuoteMark />
-          {f.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
-        </div>
+        </article>
       </div>
     </section>
   )

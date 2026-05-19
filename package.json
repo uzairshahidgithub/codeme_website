@@ -16,5 +16,8 @@
     "supa:start": "supabase start",
     "supa:stop": "supabase stop",
     "supa:status": "supabase status"
+  },
+  "devDependencies": {
+    "supabase": "^2.98.2"
   }
 }

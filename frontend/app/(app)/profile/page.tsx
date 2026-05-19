@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ProfileCard } from '@/components/profile/ProfileCard'
 
-export const metadata = { title: 'Profile — Codemo' }
+export const metadata = { title: 'Profile | Codemo Teams' }
 
 export default async function ProfilePage() {
   const supabase = await createClient()

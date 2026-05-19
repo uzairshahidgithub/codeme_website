@@ -8,6 +8,48 @@ import { useSidebarStore } from '@/stores/sidebar'
 import { useThemeStore } from '@/stores/theme'
 import { cn } from '@/lib/utils'
 
+/* ────────────────────────────────────────────────────────────
+   SidebarBackdrop — mirror of NavBackdrop:
+     • soft permanent blur (14px / saturate 160%)
+     • mid-range opacity tint (0.62)
+
+   Same split rationale: opacity stays on the tint layer only
+   so the backdrop blur is never weakened by it.
+   ────────────────────────────────────────────────────────── */
+function SidebarBackdrop() {
+  return (
+    <>
+      {/* Both layers carry data-sidebar-bg so the
+          `.codemo-sidebar-shell > *:not([data-sidebar-bg])`
+          rule in the parent doesn't promote them above the
+          icons / labels. */}
+      <span
+        data-sidebar-bg
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          borderRadius: 'inherit',
+          backdropFilter: 'blur(14px) saturate(160%)',
+          WebkitBackdropFilter: 'blur(14px) saturate(160%)',
+        }}
+      />
+      <span
+        data-sidebar-bg
+        aria-hidden="true"
+        style={{
+          borderRadius: 'inherit',
+          background: 'var(--side-glass)',
+          border: '1px solid var(--border)',
+          boxShadow:
+            'inset 0 1px 0 var(--inner-hi), 0 2px 12px var(--nav-shadow-color, rgba(0,0,0,0.12)), 0 8px 32px var(--nav-shadow-spread, rgba(0,0,0,0.08))',
+          opacity: 0.62,
+        }}
+        className="absolute inset-0 pointer-events-none"
+      />
+    </>
+  )
+}
+
 const navItems = [
   { id: 'home', label: 'Home', icon: '/icons/Home (Default).svg', href: '/' },
   { id: 'events', label: 'Events', icon: '/icons/Events (Default).svg', href: '/events' },
@@ -54,13 +96,23 @@ export function Sidebar() {
 
   return (
     <div className="fixed left-[14px] bottom-[14px] flex flex-col z-[200]" style={{ top: 'var(--sidebar-top, 100px)' }}>
+      {/* Scoped CSS — promote every direct child of the aside
+          (except the scroll-fade backdrop) above the absolute
+          backdrop so icons + labels stay visible at all times. */}
+      <style>{`
+        .codemo-sidebar-shell > *:not([data-sidebar-bg]) {
+          position: relative;
+          z-index: 1;
+        }
+      `}</style>
       <aside
         className={cn(
-          'glass-sidebar flex flex-col flex-1 shrink-0 sidebar-transition transition-[width] duration-[260ms] ease-[cubic-bezier(.4,0,.2,1)] overflow-hidden rounded-[22px]',
+          'codemo-sidebar-shell flex flex-col flex-1 shrink-0 sidebar-transition transition-[width] duration-[260ms] ease-[cubic-bezier(.4,0,.2,1)] overflow-hidden rounded-[22px] relative',
           isExpanded ? 'w-[200px]' : 'w-[70px]'
         )}
         aria-label="Sidebar navigation"
       >
+        <SidebarBackdrop />
         {/* Nav items */}
         <nav className="flex flex-col gap-[2px] flex-shrink-0 p-[14px_10px]">
           {navItems.map((item) => {
