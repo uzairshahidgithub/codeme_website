@@ -68,7 +68,8 @@ function addSecurityHeaders(response: NextResponse, nonce: string): NextResponse
 export async function proxy(request: NextRequest) {
   // If the user's browser somehow accesses the dev server via 0.0.0.0
   // (which Zen browser blocks on OAuth redirects), force them to localhost.
-  if (request.nextUrl.hostname === '0.0.0.0') {
+  const hostHeader = request.headers.get('host') || ''
+  if (hostHeader.startsWith('0.0.0.0')) {
     const newUrl = new URL(request.url)
     newUrl.hostname = 'localhost'
     return NextResponse.redirect(newUrl)
@@ -159,5 +160,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|icons/|public/).*) '],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|icons/|public/).*)'],
 }

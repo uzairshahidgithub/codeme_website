@@ -29,7 +29,7 @@ export function CookiesBanner() {
 
   return (
     <div
-      className={`fixed lg:bottom-[32px] bottom-[90px] left-1/2 -translate-x-1/2 z-[400] flex flex-col lg:flex-row items-center lg:justify-between justify-center w-[calc(100%-28px)] lg:w-auto max-w-[400px] lg:max-w-none glass-card rounded-[22px] lg:rounded-[40px] transition-opacity duration-200 ${
+      className={`fixed lg:bottom-[32px] bottom-[90px] left-1/2 -translate-x-1/2 z-[400] flex flex-col lg:flex-row items-center lg:justify-between justify-center w-[calc(100%-28px)] max-w-[400px] lg:w-[720px] lg:max-w-[720px] glass-card rounded-[22px] lg:rounded-[40px] transition-opacity duration-200 ${
         hiding ? 'opacity-0' : 'opacity-100'
       }`}
       style={{ padding: '20px 24px', gap: '16px' }}

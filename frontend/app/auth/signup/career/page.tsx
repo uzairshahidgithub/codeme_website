@@ -148,10 +148,14 @@ export default function SignupStep3Page() {
 
   // Guard: User must have completed details step before arriving here.
   useEffect(() => {
+    if (!draft.email) {
+      router.replace('/auth')
+      return
+    }
     if (!draft.username || !draft.gender || !draft.dob.yyyy) {
       router.replace('/auth/signup/details')
     }
-  }, [draft.username, draft.gender, draft.dob.yyyy, router])
+  }, [draft.email, draft.username, draft.gender, draft.dob.yyyy, router])
 
   const {
     handleSubmit,
@@ -167,8 +171,11 @@ export default function SignupStep3Page() {
   const domain = watch('domain', '')
 
   async function onSubmit(data: FormData) {
-    if (!turnstileToken) {
-      setSendError('Please complete the security validation.')
+    // Only the password-fallback branch calls signUp(), which the hosted
+    // Supabase project gates behind CAPTCHA. OTP users hit updateUser(),
+    // which needs no token.
+    if (!turnstileToken && useSignupStore.getState().draft.password) {
+      setSendError('Please wait for the security check to complete.')
       return
     }
     setSendError('')
@@ -179,18 +186,38 @@ export default function SignupStep3Page() {
     const { draft: current } = useSignupStore.getState()
 
     const supabase = createClient()
-    const { error } = await supabase.auth.updateUser({
-      data: {
-        signup_flow: 'email',
-        profile_complete: true,
-        username: current.username,
-        first_name: current.username,
-        dob: `${current.dob.yyyy}-${current.dob.mm.padStart(2, '0')}-${current.dob.dd.padStart(2, '0')}`,
-        gender: current.gender,
-        domain: data.domain,
-        status: data.status,
-      },
-    })
+    const metadata = {
+      signup_flow: 'email',
+      profile_complete: true,
+      username: current.username,
+      first_name: current.username,
+      dob: `${current.dob.yyyy}-${current.dob.mm.padStart(2, '0')}-${current.dob.dd.padStart(2, '0')}`,
+      gender: current.gender,
+      domain: data.domain,
+      status: data.status,
+    }
+
+    let error;
+
+    if (current.password) {
+      // User came through the password fallback flow — they are not authenticated yet.
+      const res = await supabase.auth.signUp({
+        email: current.email,
+        password: current.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          captchaToken: turnstileToken || undefined,
+          data: metadata,
+        },
+      })
+      error = res.error
+    } else {
+      // User came through the primary OTP flow — they are already authenticated.
+      const res = await supabase.auth.updateUser({
+        data: metadata,
+      })
+      error = res.error
+    }
 
     setSending(false)
 
@@ -254,11 +281,13 @@ export default function SignupStep3Page() {
           </p>
         )}
 
+        {/* Turnstile — required even on localhost because the hosted Supabase
+            project enforces CAPTCHA on signUp() against the real secret. */}
         <div className="mt-6 flex justify-center">
           <Turnstile
             siteKey={getTurnstileSiteKey()}
             onSuccess={(token) => setTurnstileToken(token)}
-            onError={() => setSendError('Security check failed to load.')}
+            onError={(code) => setSendError(`Security check failed to load (${code}).`)}
             onExpire={() => setTurnstileToken(null)}
             options={{ theme: 'dark' }}
           />
@@ -270,10 +299,10 @@ export default function SignupStep3Page() {
             variant="primary"
             className="w-[200px]"
             onClick={handleSubmit(onSubmit)}
-            disabled={sending}
-            aria-busy={sending}
+            disabled={sending || (!turnstileToken && !!useSignupStore.getState().draft.password)}
+            aria-busy={sending || (!turnstileToken && !!useSignupStore.getState().draft.password)}
           >
-            {sending ? 'Sending code…' : 'Continue'}
+            {sending ? 'Sending code…' : (!turnstileToken && !!useSignupStore.getState().draft.password ? 'Verifying security…' : 'Continue')}
           </Button>
         </div>
       </div>

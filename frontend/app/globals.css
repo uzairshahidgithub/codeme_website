@@ -200,6 +200,149 @@
   svg {
     display: block;
   }
+
+  /* --- CODEMO PASS COMPONENT STYLES --- */
+  .codemo-pass-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    background: transparent;
+  }
+
+  .codemo-event-pass {
+    font-family: var(--font-poppins);
+    background: var(--card-glass);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 380px;
+    padding: 36px 24px 22px 24px;
+    position: relative;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .pass-clip-slot {
+    width: 56px;
+    height: 10px;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .pass-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+    margin-bottom: 10px;
+  }
+
+  .pass-logo {
+    height: 24px;
+    width: auto;
+  }
+
+  .pass-type-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text1, #ffffff);
+    background: transparent;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1.5px solid rgba(255, 255, 255, 0.5);
+  }
+
+  .pass-body {
+    margin-bottom: 20px;
+  }
+
+  .pass-title {
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 0.95;
+    text-transform: uppercase;
+    color: var(--text1);
+    margin: 0 0 8px 0;
+    letter-spacing: -0.04em;
+    word-break: break-word;
+  }
+
+  .pass-subtitle {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--blue);
+    text-transform: uppercase;
+    margin: 0;
+  }
+
+  .pass-footer {
+    border-top: 2px dashed var(--border);
+    padding-top: 20px;
+  }
+
+  .pass-meta-group {
+    margin-bottom: 12px;
+    text-align: left;
+  }
+
+  .pass-meta-group:last-of-type {
+    margin-bottom: 14px;
+  }
+
+  .meta-label {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+
+  .meta-value {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text1);
+    text-transform: uppercase;
+  }
+
+  .pass-accent-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    color: var(--blue);
+    margin-top: 6px;
+  }
+
+  .accent-icon {
+    width: 14px;
+    height: 14px;
+    opacity: 0.85;
+  }
+}
+
+/* ── Theme-aware modal backdrop ────────────────────────────────────── */
+.modal-backdrop {
+  background: rgba(148, 163, 184, 0.35) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+.dark .modal-backdrop {
+  background: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
 }
 
 @layer utilities {

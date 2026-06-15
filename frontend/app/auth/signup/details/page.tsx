@@ -20,7 +20,12 @@ export default function SignupStep2Page() {
   const router = useRouter()
   const { draft, setDob, setUsername, setGender } = useSignupStore()
 
-  // Guard removed: User is now authenticated via OTP and middleware ensures they land here.
+  // Guard: User must have an email draft to be here (from either OTP or password signup).
+  useEffect(() => {
+    if (!draft.email) {
+      router.replace('/auth')
+    }
+  }, [draft.email, router])
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null)
   const [checkingUsername, setCheckingUsername] = useState(false)
 

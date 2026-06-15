@@ -94,12 +94,7 @@ export function Drawer({ open, onClose, title, children }: DrawerProps) {
         >
           {/* Backdrop — fade */}
           <motion.div
-            className="absolute inset-0"
-            style={{
-              background: 'rgba(0,0,0,0.55)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-            }}
+            className="absolute inset-0 modal-backdrop backdrop-blur-[12px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

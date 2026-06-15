@@ -18,6 +18,8 @@ interface Props {
   event: CalendarEvent
   /** Optional override className for the trigger. */
   className?: string
+  /** If true, renders only the calendar icon without text. */
+  iconOnly?: boolean
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -120,7 +122,7 @@ function downloadIcs(e: CalendarEvent) {
   setTimeout(() => URL.revokeObjectURL(url), 500)
 }
 
-export function AddToCalendar({ event, className }: Props) {
+export function AddToCalendar({ event, className, iconOnly }: Props) {
   const [open, setOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
@@ -192,7 +194,7 @@ export function AddToCalendar({ event, className }: Props) {
         }
       >
         <CalendarSvg />
-        Add to calendar
+        {!iconOnly && 'Add to calendar'}
       </button>
 
       {/* Menu is rendered into <body> so it escapes the event

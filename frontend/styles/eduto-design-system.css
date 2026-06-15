@@ -1,0 +1,798 @@
+/* ===================================================================
+   EDUTO DESIGN SYSTEM
+   A self-contained CSS foundation for the course enrollment section.
+
+   Aesthetic: editorial / utilitarian — O'Reilly-inspired technical
+   publishing. Sharp 90° corners, hard-offset shadows, heavy ink-black
+   borders, strong typographic weight contrast, generous whitespace.
+
+   ISOLATION CONTRACT
+   ------------------
+   Every selector below is a descendant of `.eduto-root`. Nothing in
+   this file matches an element that is not inside `.eduto-root`, so the
+   host site's navbar, sidebar and global styles are never touched.
+   All class names are prefixed `eduto-`. Design tokens are declared on
+   `.eduto-root` (the scoped equivalent of `:root`) so they are
+   inherited only by Eduto descendants and never leak upward.
+
+   USAGE
+   -----
+   <div class="eduto-root"> ...enrollment UI... </div>
+   =================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* ===================================================================
+   1. DESIGN TOKENS
+   Scoped to `.eduto-root` rather than a global `:root` so the cascade
+   cannot reach the rest of the site. Treat this block as Eduto's
+   private `:root`.
+   =================================================================== */
+
+.eduto-root {
+  /* --- Color: surfaces --- */
+  --eduto-bg:            #ffffff;
+  --eduto-surface:       #f8f9fa;
+  --eduto-surface-sunk:  #f1f3f5;
+
+  /* --- Color: ink --- */
+  --eduto-ink:           #1a1a1a;
+  --eduto-ink-muted:     #6b7280;
+  --eduto-ink-inverse:   #ffffff;
+
+  /* --- Color: accent (CTAs, active steps, links ONLY) --- */
+  --eduto-accent:        #0066cc;
+  --eduto-accent-hover:  #0052a3;
+  --eduto-accent-sunk:   #004080;
+  --eduto-accent-wash:   #e8f1fb;
+
+  /* --- Color: borders --- */
+  --eduto-border-heavy:  #1a1a1a;
+  --eduto-border-light:  #d4d4d4;
+
+  /* --- Color: status --- */
+  --eduto-success:       #1f7a3d;
+  --eduto-warning:       #b45309;
+  --eduto-danger:        #b91c1c;
+
+  /* --- Borders --- */
+  --eduto-border-card:    2px solid var(--eduto-border-heavy);
+  --eduto-border-divider: 1px solid var(--eduto-border-light);
+  --eduto-border-w-heavy: 2px;
+  --eduto-border-w-light: 1px;
+
+  /* --- Radius: zero, everywhere, non-negotiable --- */
+  --eduto-radius: 0;
+
+  /* --- Shadows: sharp, hard-offset, no blur --- */
+  --eduto-shadow:        4px 4px 0px rgba(0, 0, 0, 0.08);
+  --eduto-shadow-hover:  6px 6px 0px rgba(0, 0, 0, 0.12);
+  --eduto-shadow-accent: 4px 4px 0px rgba(0, 102, 204, 0.18);
+  --eduto-shadow-inset:  inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+
+  /* --- Typography --- */
+  --eduto-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --eduto-font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, monospace;
+
+  --eduto-fs-xs:   0.75rem;   /* 12px */
+  --eduto-fs-sm:   0.875rem;  /* 14px */
+  --eduto-fs-base: 1rem;      /* 16px */
+  --eduto-fs-md:   1.125rem;  /* 18px */
+  --eduto-fs-lg:   1.5rem;    /* 24px */
+  --eduto-fs-xl:   2rem;      /* 32px */
+  --eduto-fs-2xl:  2.75rem;   /* 44px */
+
+  --eduto-fw-regular:  400;
+  --eduto-fw-medium:   500;
+  --eduto-fw-semibold: 600;
+  --eduto-fw-bold:     700;
+  --eduto-fw-black:    900;
+
+  --eduto-lh-tight:   1.15;
+  --eduto-lh-snug:    1.35;
+  --eduto-lh-normal:  1.6;
+
+  --eduto-tracking-tight: -0.02em;
+  --eduto-tracking-wide:  0.08em;
+
+  /* --- Spacing scale (8px base) --- */
+  --eduto-space-1:  0.25rem;  /* 4  */
+  --eduto-space-2:  0.5rem;   /* 8  */
+  --eduto-space-3:  0.75rem;  /* 12 */
+  --eduto-space-4:  1rem;     /* 16 */
+  --eduto-space-5:  1.5rem;   /* 24 */
+  --eduto-space-6:  2rem;     /* 32 */
+  --eduto-space-7:  3rem;     /* 48 */
+  --eduto-space-8:  4rem;     /* 64 */
+
+  /* --- Layout --- */
+  --eduto-container-max: 1200px;
+  --eduto-grid-gap:      var(--eduto-space-5);
+
+  /* --- Motion --- */
+  --eduto-transition-step:  0.2s ease;
+  --eduto-transition-hover: 0.15s ease;
+
+  /* --- Establish the scope as a clean canvas --- */
+  font-family: var(--eduto-font-sans);
+  font-size: var(--eduto-fs-base);
+  line-height: var(--eduto-lh-normal);
+  color: var(--eduto-ink);
+  background-color: var(--eduto-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ===================================================================
+   2. SCOPED RESET
+   Normalizes only elements inside `.eduto-root`. The host site keeps
+   its own box model untouched.
+   =================================================================== */
+
+.eduto-root *,
+.eduto-root *::before,
+.eduto-root *::after {
+  box-sizing: border-box;
+  border-radius: var(--eduto-radius); /* enforce zero radius globally */
+}
+
+.eduto-root :where(h1, h2, h3, h4, h5, h6, p, figure) {
+  margin: 0;
+}
+
+.eduto-root :where(a) {
+  color: var(--eduto-accent);
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
+  transition: color var(--eduto-transition-hover);
+}
+
+.eduto-root :where(a:hover) {
+  color: var(--eduto-accent-hover);
+}
+
+.eduto-root :where(button) {
+  font-family: inherit;
+}
+
+.eduto-root :where(code, kbd, samp) {
+  font-family: var(--eduto-font-mono);
+}
+
+.eduto-root :where(:focus-visible) {
+  outline: 2px solid var(--eduto-accent);
+  outline-offset: 2px;
+}
+
+/* ===================================================================
+   3. TYPOGRAPHY HELPERS
+   Strong weight contrast — the editorial signature.
+   =================================================================== */
+
+.eduto-root .eduto-display {
+  font-size: var(--eduto-fs-2xl);
+  font-weight: var(--eduto-fw-black);
+  line-height: var(--eduto-lh-tight);
+  letter-spacing: var(--eduto-tracking-tight);
+}
+
+.eduto-root .eduto-heading {
+  font-size: var(--eduto-fs-xl);
+  font-weight: var(--eduto-fw-bold);
+  line-height: var(--eduto-lh-tight);
+  letter-spacing: var(--eduto-tracking-tight);
+}
+
+.eduto-root .eduto-subheading {
+  font-size: var(--eduto-fs-lg);
+  font-weight: var(--eduto-fw-semibold);
+  line-height: var(--eduto-lh-snug);
+}
+
+.eduto-root .eduto-eyebrow {
+  font-size: var(--eduto-fs-xs);
+  font-weight: var(--eduto-fw-bold);
+  letter-spacing: var(--eduto-tracking-wide);
+  text-transform: uppercase;
+  color: var(--eduto-ink-muted);
+}
+
+.eduto-root .eduto-body {
+  font-size: var(--eduto-fs-base);
+  font-weight: var(--eduto-fw-regular);
+  line-height: var(--eduto-lh-normal);
+}
+
+.eduto-root .eduto-muted {
+  color: var(--eduto-ink-muted);
+}
+
+/* ===================================================================
+   4. BASE COMPONENTS
+   =================================================================== */
+
+/* --- 4.1 Card ---------------------------------------------------- */
+.eduto-root .eduto-card {
+  display: block;
+  background-color: var(--eduto-surface);
+  border: var(--eduto-border-card);
+  box-shadow: var(--eduto-shadow);
+  padding: var(--eduto-space-6);
+  transition:
+    box-shadow var(--eduto-transition-hover),
+    transform   var(--eduto-transition-hover);
+}
+
+.eduto-root .eduto-card--plain {
+  background-color: var(--eduto-bg);
+}
+
+/* Interactive cards (e.g. selectable course tiers) lift on hover. */
+.eduto-root .eduto-card--interactive {
+  cursor: pointer;
+}
+
+.eduto-root .eduto-card--interactive:hover {
+  box-shadow: var(--eduto-shadow-hover);
+  transform: translate(-2px, -2px);
+}
+
+.eduto-root .eduto-card--interactive:active {
+  box-shadow: var(--eduto-shadow);
+  transform: translate(0, 0);
+}
+
+/* Selected state — accent shadow, no fill flood. */
+.eduto-root .eduto-card--selected {
+  box-shadow: var(--eduto-shadow-accent);
+  outline: 2px solid var(--eduto-accent);
+  outline-offset: -2px;
+}
+
+/* Inner divider line for stacked card sections. */
+.eduto-root .eduto-card__divider {
+  border: 0;
+  border-top: var(--eduto-border-divider);
+  margin: var(--eduto-space-5) 0;
+}
+
+/* --- 4.2 Buttons ------------------------------------------------- */
+.eduto-root .eduto-btn-primary,
+.eduto-root .eduto-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--eduto-space-2);
+  font-family: var(--eduto-font-sans);
+  font-size: var(--eduto-fs-sm);
+  font-weight: var(--eduto-fw-bold);
+  letter-spacing: 0.01em;
+  line-height: 1;
+  padding: var(--eduto-space-3) var(--eduto-space-5);
+  cursor: pointer;
+  user-select: none;
+  text-decoration: none;
+  transition:
+    background-color var(--eduto-transition-hover),
+    color            var(--eduto-transition-hover),
+    box-shadow       var(--eduto-transition-hover),
+    transform        var(--eduto-transition-hover);
+}
+
+/* Primary — the only place accent fills a surface. CTAs. */
+.eduto-root .eduto-btn-primary {
+  background-color: var(--eduto-accent);
+  color: var(--eduto-ink-inverse);
+  border: 2px solid var(--eduto-accent);
+  box-shadow: var(--eduto-shadow);
+}
+
+.eduto-root .eduto-btn-primary:hover {
+  background-color: var(--eduto-accent-hover);
+  border-color: var(--eduto-accent-hover);
+  box-shadow: var(--eduto-shadow-hover);
+  transform: translate(-2px, -2px);
+}
+
+.eduto-root .eduto-btn-primary:active {
+  background-color: var(--eduto-accent-sunk);
+  border-color: var(--eduto-accent-sunk);
+  box-shadow: var(--eduto-shadow);
+  transform: translate(0, 0);
+}
+
+/* Secondary — ink outline, transparent fill. */
+.eduto-root .eduto-btn-secondary {
+  background-color: transparent;
+  color: var(--eduto-ink);
+  border: 2px solid var(--eduto-border-heavy);
+  box-shadow: var(--eduto-shadow);
+}
+
+.eduto-root .eduto-btn-secondary:hover {
+  background-color: var(--eduto-ink);
+  color: var(--eduto-ink-inverse);
+  box-shadow: var(--eduto-shadow-hover);
+  transform: translate(-2px, -2px);
+}
+
+.eduto-root .eduto-btn-secondary:active {
+  box-shadow: var(--eduto-shadow);
+  transform: translate(0, 0);
+}
+
+/* Shared button modifiers. */
+.eduto-root .eduto-btn-primary:disabled,
+.eduto-root .eduto-btn-secondary:disabled,
+.eduto-root .eduto-btn-primary[aria-disabled='true'],
+.eduto-root .eduto-btn-secondary[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.45;
+  box-shadow: none;
+  transform: none;
+}
+
+.eduto-root .eduto-btn-primary--block,
+.eduto-root .eduto-btn-secondary--block {
+  display: flex;
+  width: 100%;
+}
+
+.eduto-root .eduto-btn-primary--lg,
+.eduto-root .eduto-btn-secondary--lg {
+  font-size: var(--eduto-fs-base);
+  padding: var(--eduto-space-4) var(--eduto-space-6);
+}
+
+/* --- 4.3 Input --------------------------------------------------- */
+.eduto-root .eduto-input {
+  display: block;
+  width: 100%;
+  font-family: var(--eduto-font-sans);
+  font-size: var(--eduto-fs-base);
+  font-weight: var(--eduto-fw-regular);
+  color: var(--eduto-ink);
+  background-color: var(--eduto-bg);
+  border: 2px solid var(--eduto-border-heavy);
+  padding: var(--eduto-space-3) var(--eduto-space-4);
+  box-shadow: var(--eduto-shadow-inset);
+  transition:
+    box-shadow  var(--eduto-transition-hover),
+    border-color var(--eduto-transition-hover);
+}
+
+.eduto-root .eduto-input::placeholder {
+  color: var(--eduto-ink-muted);
+}
+
+.eduto-root .eduto-input:hover {
+  border-color: var(--eduto-ink);
+}
+
+.eduto-root .eduto-input:focus {
+  outline: none;
+  border-color: var(--eduto-accent);
+  box-shadow: var(--eduto-shadow-accent);
+}
+
+.eduto-root .eduto-input:disabled {
+  background-color: var(--eduto-surface-sunk);
+  color: var(--eduto-ink-muted);
+  cursor: not-allowed;
+}
+
+/* Error state for validation feedback. */
+.eduto-root .eduto-input--error {
+  border-color: var(--eduto-danger);
+}
+
+.eduto-root .eduto-input--error:focus {
+  box-shadow: 4px 4px 0px rgba(185, 28, 28, 0.18);
+}
+
+/* Monospace variant — card numbers, coupon codes. */
+.eduto-root .eduto-input--mono {
+  font-family: var(--eduto-font-mono);
+  letter-spacing: 0.04em;
+}
+
+/* Field label + helper text scaffolding. */
+.eduto-root .eduto-field {
+  display: grid;
+  gap: var(--eduto-space-2);
+}
+
+.eduto-root .eduto-field__label {
+  font-size: var(--eduto-fs-sm);
+  font-weight: var(--eduto-fw-bold);
+  color: var(--eduto-ink);
+}
+
+.eduto-root .eduto-field__hint {
+  font-size: var(--eduto-fs-xs);
+  color: var(--eduto-ink-muted);
+}
+
+.eduto-root .eduto-field__hint--error {
+  color: var(--eduto-danger);
+  font-weight: var(--eduto-fw-medium);
+}
+
+/* --- 4.4 Badge --------------------------------------------------- */
+.eduto-root .eduto-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--eduto-space-1);
+  font-size: var(--eduto-fs-xs);
+  font-weight: var(--eduto-fw-bold);
+  letter-spacing: var(--eduto-tracking-wide);
+  text-transform: uppercase;
+  line-height: 1;
+  padding: var(--eduto-space-2) var(--eduto-space-3);
+  background-color: var(--eduto-bg);
+  color: var(--eduto-ink);
+  border: 1px solid var(--eduto-border-heavy);
+}
+
+.eduto-root .eduto-badge--accent {
+  background-color: var(--eduto-accent-wash);
+  color: var(--eduto-accent-sunk);
+  border-color: var(--eduto-accent);
+}
+
+.eduto-root .eduto-badge--solid {
+  background-color: var(--eduto-ink);
+  color: var(--eduto-ink-inverse);
+  border-color: var(--eduto-ink);
+}
+
+.eduto-root .eduto-badge--success {
+  background-color: #e7f3eb;
+  color: var(--eduto-success);
+  border-color: var(--eduto-success);
+}
+
+.eduto-root .eduto-badge--warning {
+  background-color: #fcf1e3;
+  color: var(--eduto-warning);
+  border-color: var(--eduto-warning);
+}
+
+/* --- 4.5 Progress step ------------------------------------------ */
+/* Designed for an enrollment flow: Account → Course → Payment → Done */
+.eduto-root .eduto-progress {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  align-items: start;
+  border: var(--eduto-border-card);
+  background-color: var(--eduto-surface);
+  box-shadow: var(--eduto-shadow);
+}
+
+.eduto-root .eduto-progress-step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--eduto-space-3);
+  padding: var(--eduto-space-4) var(--eduto-space-5);
+  border-right: var(--eduto-border-divider);
+  background-color: transparent;
+  transition:
+    background-color var(--eduto-transition-step),
+    color            var(--eduto-transition-step);
+}
+
+.eduto-root .eduto-progress-step:last-child {
+  border-right: 0;
+}
+
+/* The numbered marker. */
+.eduto-root .eduto-progress-step__marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  font-family: var(--eduto-font-mono);
+  font-size: var(--eduto-fs-sm);
+  font-weight: var(--eduto-fw-bold);
+  border: 2px solid var(--eduto-border-heavy);
+  background-color: var(--eduto-bg);
+  color: var(--eduto-ink);
+  transition:
+    background-color var(--eduto-transition-step),
+    border-color     var(--eduto-transition-step),
+    color            var(--eduto-transition-step);
+}
+
+.eduto-root .eduto-progress-step__label {
+  display: grid;
+  gap: 2px;
+}
+
+.eduto-root .eduto-progress-step__index {
+  font-size: var(--eduto-fs-xs);
+  font-weight: var(--eduto-fw-bold);
+  letter-spacing: var(--eduto-tracking-wide);
+  text-transform: uppercase;
+  color: var(--eduto-ink-muted);
+}
+
+.eduto-root .eduto-progress-step__title {
+  font-size: var(--eduto-fs-sm);
+  font-weight: var(--eduto-fw-bold);
+  color: var(--eduto-ink);
+}
+
+/* Active step — the only accent allowed here. */
+.eduto-root .eduto-progress-step--active {
+  background-color: var(--eduto-bg);
+}
+
+.eduto-root .eduto-progress-step--active .eduto-progress-step__marker {
+  background-color: var(--eduto-accent);
+  border-color: var(--eduto-accent);
+  color: var(--eduto-ink-inverse);
+}
+
+.eduto-root .eduto-progress-step--active .eduto-progress-step__index {
+  color: var(--eduto-accent);
+}
+
+/* Completed step — ink-filled marker with a check. */
+.eduto-root .eduto-progress-step--complete .eduto-progress-step__marker {
+  background-color: var(--eduto-ink);
+  border-color: var(--eduto-ink);
+  color: var(--eduto-ink-inverse);
+}
+
+.eduto-root .eduto-progress-step--complete .eduto-progress-step__marker::after {
+  content: '\2713'; /* check mark */
+}
+
+.eduto-root .eduto-progress-step--complete .eduto-progress-step__marker-num {
+  display: none;
+}
+
+/* Upcoming step — dimmed. */
+.eduto-root .eduto-progress-step--upcoming {
+  opacity: 0.55;
+}
+
+/* ===================================================================
+   5. UTILITY CLASSES
+   =================================================================== */
+
+/* --- 5.1 Container — centered max-width wrapper ------------------ */
+.eduto-root .eduto-container {
+  width: 100%;
+  max-width: var(--eduto-container-max);
+  margin-inline: auto;
+  padding-inline: var(--eduto-space-5);
+}
+
+.eduto-root .eduto-container--narrow {
+  max-width: 720px;
+}
+
+/* --- 5.2 Grid ---------------------------------------------------- */
+.eduto-root .eduto-grid {
+  display: grid;
+  gap: var(--eduto-grid-gap);
+  grid-template-columns: repeat(12, 1fr);
+}
+
+/* Convenience fixed-column grids. */
+.eduto-root .eduto-grid--2 { grid-template-columns: repeat(2, 1fr); }
+.eduto-root .eduto-grid--3 { grid-template-columns: repeat(3, 1fr); }
+.eduto-root .eduto-grid--4 { grid-template-columns: repeat(4, 1fr); }
+
+/* Enrollment layout: content + sticky order summary. */
+.eduto-root .eduto-grid--checkout {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
+}
+
+/* Column spans for the 12-col grid. */
+.eduto-root .eduto-col-3  { grid-column: span 3; }
+.eduto-root .eduto-col-4  { grid-column: span 4; }
+.eduto-root .eduto-col-6  { grid-column: span 6; }
+.eduto-root .eduto-col-8  { grid-column: span 8; }
+.eduto-root .eduto-col-12 { grid-column: span 12; }
+
+/* --- 5.3 Monospace text ----------------------------------------- */
+.eduto-root .eduto-text-mono {
+  font-family: var(--eduto-font-mono);
+  font-size: var(--eduto-fs-sm);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Payment IDs, transaction refs, code-like tokens. */
+.eduto-root .eduto-text-mono--token {
+  display: inline-block;
+  padding: 2px var(--eduto-space-2);
+  background-color: var(--eduto-surface-sunk);
+  border: 1px solid var(--eduto-border-light);
+  color: var(--eduto-ink);
+}
+
+/* --- 5.4 Heavy border ------------------------------------------- */
+.eduto-root .eduto-border-heavy {
+  border: var(--eduto-border-card);
+}
+
+.eduto-root .eduto-border-divider {
+  border: 0;
+  border-top: var(--eduto-border-divider);
+}
+
+/* --- 5.5 Misc helpers ------------------------------------------- */
+.eduto-root .eduto-shadow      { box-shadow: var(--eduto-shadow); }
+.eduto-root .eduto-shadow-none { box-shadow: none; }
+.eduto-root .eduto-surface     { background-color: var(--eduto-surface); }
+
+.eduto-root .eduto-stack   { display: grid; gap: var(--eduto-space-4); }
+.eduto-root .eduto-stack-2 { display: grid; gap: var(--eduto-space-2); }
+.eduto-root .eduto-stack-6 { display: grid; gap: var(--eduto-space-6); }
+
+.eduto-root .eduto-row {
+  display: flex;
+  align-items: center;
+  gap: var(--eduto-space-3);
+}
+
+.eduto-root .eduto-row--between { justify-content: space-between; }
+.eduto-root .eduto-row--wrap    { flex-wrap: wrap; }
+
+/* ===================================================================
+   6. ANIMATIONS
+   =================================================================== */
+
+@keyframes eduto-step-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes eduto-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Apply to the panel revealed when a wizard step changes. */
+.eduto-root .eduto-step-panel {
+  animation: eduto-step-in var(--eduto-transition-step) both;
+}
+
+.eduto-root .eduto-fade-in {
+  animation: eduto-fade-in var(--eduto-transition-step) both;
+}
+
+/* Staggered reveal for a list of items on first paint. */
+.eduto-root .eduto-stagger > * {
+  animation: eduto-step-in var(--eduto-transition-step) both;
+}
+.eduto-root .eduto-stagger > *:nth-child(1) { animation-delay: 0.00s; }
+.eduto-root .eduto-stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.eduto-root .eduto-stagger > *:nth-child(3) { animation-delay: 0.12s; }
+.eduto-root .eduto-stagger > *:nth-child(4) { animation-delay: 0.18s; }
+.eduto-root .eduto-stagger > *:nth-child(5) { animation-delay: 0.24s; }
+.eduto-root .eduto-stagger > *:nth-child(6) { animation-delay: 0.30s; }
+
+/* Respect users who ask for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .eduto-root *,
+  .eduto-root *::before,
+  .eduto-root *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .eduto-root .eduto-card--interactive:hover,
+  .eduto-root .eduto-btn-primary:hover,
+  .eduto-root .eduto-btn-secondary:hover {
+    transform: none;
+  }
+}
+
+/* ===================================================================
+   7. RESPONSIVE BREAKPOINTS
+   mobile  < 768px   |   tablet 768–1024px   |   desktop > 1024px
+   Base styles above are authored desktop-first; overrides below
+   collapse the layout downward.
+   =================================================================== */
+
+/* --- Tablet: 768px – 1024px -------------------------------------- */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .eduto-root .eduto-container {
+    padding-inline: var(--eduto-space-5);
+  }
+
+  /* Order summary drops below content. */
+  .eduto-root .eduto-grid--checkout {
+    grid-template-columns: 1fr;
+  }
+
+  .eduto-root .eduto-grid--4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .eduto-root .eduto-col-3 { grid-column: span 6; }
+  .eduto-root .eduto-col-4 { grid-column: span 6; }
+  .eduto-root .eduto-col-8 { grid-column: span 12; }
+
+  .eduto-root .eduto-display { font-size: var(--eduto-fs-xl); }
+}
+
+/* --- Mobile: < 768px --------------------------------------------- */
+@media (max-width: 767px) {
+  .eduto-root {
+    --eduto-grid-gap: var(--eduto-space-4);
+  }
+
+  .eduto-root .eduto-container {
+    padding-inline: var(--eduto-space-4);
+  }
+
+  .eduto-root .eduto-card {
+    padding: var(--eduto-space-5);
+  }
+
+  /* All multi-column grids collapse to a single column. */
+  .eduto-root .eduto-grid,
+  .eduto-root .eduto-grid--2,
+  .eduto-root .eduto-grid--3,
+  .eduto-root .eduto-grid--4,
+  .eduto-root .eduto-grid--checkout {
+    grid-template-columns: 1fr;
+  }
+
+  .eduto-root .eduto-col-3,
+  .eduto-root .eduto-col-4,
+  .eduto-root .eduto-col-6,
+  .eduto-root .eduto-col-8,
+  .eduto-root .eduto-col-12 {
+    grid-column: span 1;
+  }
+
+  /* Progress steps stack vertically; dividers become horizontal. */
+  .eduto-root .eduto-progress {
+    grid-auto-flow: row;
+  }
+
+  .eduto-root .eduto-progress-step {
+    border-right: 0;
+    border-bottom: var(--eduto-border-divider);
+  }
+
+  .eduto-root .eduto-progress-step:last-child {
+    border-bottom: 0;
+  }
+
+  /* Buttons go full-width by default on mobile. */
+  .eduto-root .eduto-btn-primary,
+  .eduto-root .eduto-btn-secondary {
+    width: 100%;
+  }
+
+  .eduto-root .eduto-display { font-size: var(--eduto-fs-xl); }
+  .eduto-root .eduto-heading { font-size: var(--eduto-fs-lg); }
+
+  .eduto-root .eduto-row--wrap-mobile {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* --- Desktop: > 1024px ------------------------------------------- */
+@media (min-width: 1025px) {
+  /* Order summary can stick while content scrolls. */
+  .eduto-root .eduto-summary-sticky {
+    position: sticky;
+    top: var(--eduto-space-5);
+  }
+}
+
+/* =================================================================== */
+/* END EDUTO DESIGN SYSTEM                                             */
+/* =================================================================== */

@@ -36,10 +36,9 @@ export function EventDetailPopup({ event, open, onClose, isAuthed, registered, a
   const cancelled = event.status === 'cancelled'
 
   return createPortal(
-    <div className="fixed inset-0 z-[700]" role="dialog" aria-modal="true" aria-label={event.title}>
+    <div className="fixed inset-0 z-[700] modal-backdrop backdrop-blur-[12px]" role="dialog" aria-modal="true" aria-label={event.title}>
       <div
         className="absolute inset-0"
-        style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
         onClick={onClose}
         aria-hidden="true"
       />

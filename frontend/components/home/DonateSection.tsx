@@ -542,7 +542,7 @@ export function DonateSection() {
             <button
               type="button" aria-label="Close donation dialog"
               onClick={closeModal}
-              className="absolute inset-0 bg-black/75 backdrop-blur-md"
+              className="absolute inset-0 modal-backdrop backdrop-blur-[12px]"
             />
             <motion.div
               initial={{ opacity: 0, y: 16, scale: 0.98 }}

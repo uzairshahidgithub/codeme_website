@@ -29,17 +29,12 @@ export function getOAuthOrigin(): string {
 }
 
 /**
- * Returns the appropriate Cloudflare Turnstile Site Key depending on the environment.
- * If running on localhost or 127.0.0.1, it returns Cloudflare's Universal Testing key 
- * to prevent domain-mismatch (Error 110200) during local development.
+ * Returns the appropriate Cloudflare Turnstile Site Key.
+ * We must use the real site key even on localhost because Supabase 
+ * strictly enforces valid tokens against the production secret key.
+ * Ensure localhost is whitelisted in your Cloudflare dashboard!
  */
 export function getTurnstileSiteKey(): string {
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return '1x00000000000000000000AA' // Universal Testing Key (Always Passes)
-    }
-  }
   return process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'
 }
 

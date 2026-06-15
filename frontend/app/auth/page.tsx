@@ -7,7 +7,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { emailSchema } from '@/lib/validations/auth'
 import { useSignupStore } from '@/stores/signup'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -38,15 +37,21 @@ function ErrorMessage() {
 export default function AuthDefaultPage() {
   const router = useRouter()
   const setEmailStore = useSignupStore((s) => s.setEmail)
+  const setPasswordStore = useSignupStore((s) => s.setPassword)
   const [step, setStep] = useState<'email' | 'otp'>('email')
   const [checking, setChecking] = useState(false)
   const [serverError, setServerError] = useState('')
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  // Locked to the address we actually sent the OTP to. Decoupling
+  // from react-hook-form's `watch` makes verify resilient to any
+  // re-render or autofill that could blank the form input.
+  const [sentToEmail, setSentToEmail] = useState('')
 
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -57,18 +62,22 @@ export default function AuthDefaultPage() {
 
   async function onSendOtp(data: FormData) {
     if (!turnstileToken) {
-      setServerError('Please complete the security validation.')
+      setServerError('Please wait for the security check to complete.')
       return
     }
 
     setChecking(true)
     setServerError('')
     setEmailStore(data.email)
+    // Make sure any stale password from a prior /auth/signup visit
+    // is cleared — /career uses draft.password to decide signUp vs
+    // updateUser, and an OTP user must take the updateUser branch.
+    setPasswordStore('')
 
     const supabase = createClient()
     const { error } = await supabase.auth.signInWithOtp({
       email: data.email,
-      options: { captchaToken: turnstileToken },
+      options: { captchaToken: turnstileToken || undefined },
     })
 
     if (error) {
@@ -77,13 +86,21 @@ export default function AuthDefaultPage() {
       return
     }
 
+    setSentToEmail(data.email)
     setStep('otp')
     setChecking(false)
   }
 
   async function onVerifyOtp(data: FormData) {
-    if (!data.otp || data.otp.length !== 6) {
-      setServerError('Please enter a valid 6-digit code')
+    const token = (data.otp ?? '').trim()
+    const email = sentToEmail || data.email
+
+    if (!email) {
+      setServerError('Missing email — please request a new code.')
+      return
+    }
+    if (!/^\d{6}$/.test(token)) {
+      setServerError('Please enter the 6-digit code from your email.')
       return
     }
 
@@ -92,26 +109,38 @@ export default function AuthDefaultPage() {
 
     const supabase = createClient()
     const { data: authData, error } = await supabase.auth.verifyOtp({
-      email: data.email,
-      token: data.otp,
+      email,
+      token,
       type: 'email',
     })
 
-    if (error) {
-      setServerError('Invalid or expired code.')
+    if (error || !authData?.session) {
+      console.error('[OTP] verifyOtp failed', error)
+      setServerError(error?.message ?? 'Verification failed. Please request a new code.')
       setChecking(false)
       return
     }
 
-    // Check if the profile is fully set up
-    const profileComplete = authData.user?.user_metadata?.profile_complete
-    
-    router.refresh()
-    if (profileComplete) {
-      router.push('/')
-    } else {
-      router.push('/auth/signup/details')
+    // Pull fresh metadata — the JWT we just got back can lag for
+    // brand-new users, so getUser() is the safe source of truth.
+    const { data: userResult } = await supabase.auth.getUser()
+    const meta = (userResult.user?.user_metadata ?? {}) as {
+      profile_complete?: boolean
+      username?: string
     }
+    const profileComplete = meta.profile_complete === true && !!meta.username
+
+    setEmailStore(email)
+    router.refresh()
+    router.replace(profileComplete ? '/' : '/auth/signup/details')
+  }
+
+  function backToEmail() {
+    setStep('email')
+    setServerError('')
+    setSentToEmail('')
+    setTurnstileToken(null)
+    setValue('otp', '')
   }
 
   async function signInWithProvider(provider: Provider) {
@@ -157,17 +186,18 @@ export default function AuthDefaultPage() {
               {...register('otp')}
             />
             <p className="text-caption text-text-muted mt-2 text-center">
-              We sent a one-time code to {currentEmail}.
+              We sent a one-time code to {sentToEmail || currentEmail}.
             </p>
           </div>
         )}
 
-        {/* Turnstile Verification */}
+        {/* Turnstile Verification — required even on localhost because the
+            hosted Supabase project enforces CAPTCHA against the real secret. */}
         <div className="mt-4 flex justify-center">
           <Turnstile
             siteKey={getTurnstileSiteKey()}
             onSuccess={(token) => setTurnstileToken(token)}
-            onError={() => setServerError('Security check failed to load.')}
+            onError={(code) => setServerError(`Security check failed to load (${code}).`)}
             onExpire={() => setTurnstileToken(null)}
             options={{ theme: 'dark' }}
           />
@@ -180,10 +210,10 @@ export default function AuthDefaultPage() {
               variant="primary"
               className="w-full h-[56px] shadow-[0_0_30px_rgba(59,130,246,0.2)]"
               onClick={handleSubmit(onSendOtp)}
-              disabled={checking || !currentEmail}
-              aria-busy={checking}
+              disabled={checking || !currentEmail || !turnstileToken}
+              aria-busy={checking || !turnstileToken}
             >
-              {checking ? 'Sending code…' : 'Continue with Email'}
+              {checking ? 'Sending code…' : (!turnstileToken ? 'Verifying security…' : 'Continue with Email')}
             </Button>
           ) : (
             <>
@@ -191,7 +221,7 @@ export default function AuthDefaultPage() {
                 variant="primary"
                 className="w-full h-[56px] shadow-[0_0_30px_rgba(59,130,246,0.2)]"
                 onClick={handleSubmit(onVerifyOtp)}
-                disabled={checking || otp.length !== 6}
+                disabled={checking || (otp?.length ?? 0) !== 6}
                 aria-busy={checking}
               >
                 {checking ? 'Verifying…' : 'Verify Code'}
@@ -199,7 +229,7 @@ export default function AuthDefaultPage() {
               <Button
                 variant="secondary"
                 className="w-full h-[56px]"
-                onClick={(e) => { e.preventDefault(); setStep('email'); setServerError(''); }}
+                onClick={(e) => { e.preventDefault(); backToEmail(); }}
                 disabled={checking}
               >
                 Try Another Email

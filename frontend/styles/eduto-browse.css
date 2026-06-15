@@ -1,0 +1,776 @@
+/* ===================================================================
+   EDUTO BROWSE — page-specific styles for the course library view.
+
+   Pairs with eduto-design-system.css. Every selector is prefixed
+   `.eduto-root` so nothing leaks onto the host site's navbar / sidebar
+   / bottom-nav. Reusable primitives (cards, buttons, badges, grid)
+   come from the design system; this file only adds page composition.
+   =================================================================== */
+
+/* ---- Page shell ---------------------------------------------------- */
+.eduto-root .eduto-page {
+  background-color: var(--eduto-bg);
+  max-width: 1320px;
+  margin: 0 auto;
+  border: var(--eduto-border-card);
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.10);
+}
+
+/* ---- Hero banner --------------------------------------------------- */
+.eduto-root .eduto-hero {
+  position: relative;
+  padding: var(--eduto-space-8) var(--eduto-space-7);
+  border-bottom: var(--eduto-border-card);
+  background-color: var(--eduto-surface);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 22px,
+    rgba(0, 0, 0, 0.022) 22px 23px
+  );
+  overflow: hidden;
+}
+.eduto-root .eduto-hero__eyebrow { margin-bottom: var(--eduto-space-4); }
+.eduto-root .eduto-hero__title {
+  max-width: 18ch;
+  margin-bottom: var(--eduto-space-4);
+}
+.eduto-root .eduto-hero__title em { font-style: normal; display: block; }
+.eduto-root .eduto-hero__title .w-accent { color: var(--eduto-accent); }
+.eduto-root .eduto-hero__sub {
+  font-size: var(--eduto-fs-md);
+  color: var(--eduto-ink-muted);
+  max-width: 42ch;
+}
+.eduto-root .eduto-hero__sub b { color: var(--eduto-ink); font-weight: var(--eduto-fw-bold); }
+.eduto-root .eduto-hero__mark {
+  position: absolute;
+  right: -0.08em;
+  bottom: -0.34em;
+  font-family: var(--eduto-font-mono);
+  font-weight: 700;
+  font-size: 16rem;
+  line-height: 1;
+  color: rgba(26, 26, 26, 0.05);
+  pointer-events: none;
+  user-select: none;
+}
+.eduto-root .eduto-hero__stats {
+  display: flex;
+  margin-top: var(--eduto-space-6);
+  border: var(--eduto-border-card);
+  width: fit-content;
+  background-color: var(--eduto-bg);
+}
+.eduto-root .eduto-stat {
+  padding: var(--eduto-space-3) var(--eduto-space-5);
+  border-right: var(--eduto-border-divider);
+}
+.eduto-root .eduto-stat:last-child { border-right: 0; }
+.eduto-root .eduto-stat__num {
+  font-family: var(--eduto-font-mono);
+  font-size: var(--eduto-fs-lg);
+  font-weight: var(--eduto-fw-bold);
+}
+.eduto-root .eduto-stat__label {
+  font-size: var(--eduto-fs-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--eduto-tracking-wide);
+  color: var(--eduto-ink-muted);
+  font-weight: var(--eduto-fw-bold);
+}
+
+/* ---- Category tabs ------------------------------------------------- */
+.eduto-root .eduto-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  border-bottom: var(--eduto-border-card);
+  background-color: var(--eduto-bg);
+}
+.eduto-root .eduto-tab {
+  appearance: none;
+  background-color: transparent;
+  border: 0;
+  border-right: var(--eduto-border-divider);
+  border-bottom: 3px solid transparent;
+  padding: var(--eduto-space-4) var(--eduto-space-5);
+  font-family: var(--eduto-font-sans);
+  font-size: var(--eduto-fs-sm);
+  font-weight: var(--eduto-fw-bold);
+  letter-spacing: 0.02em;
+  color: var(--eduto-ink-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--eduto-transition-step),
+    color            var(--eduto-transition-step),
+    border-color     var(--eduto-transition-step);
+}
+.eduto-root .eduto-tab:hover {
+  background-color: var(--eduto-surface);
+  color: var(--eduto-ink);
+}
+.eduto-root .eduto-tab--active {
+  color: var(--eduto-ink);
+  border-bottom: 3px solid var(--eduto-border-heavy);
+}
+.eduto-root .eduto-tab__count {
+  font-family: var(--eduto-font-mono);
+  font-size: var(--eduto-fs-xs);
+  color: var(--eduto-ink-muted);
+  margin-left: var(--eduto-space-2);
+}
+
+/* ---- Section scaffolding ------------------------------------------ */
+.eduto-root .eduto-section { padding: var(--eduto-space-7); }
+.eduto-root .eduto-section + .eduto-section { border-top: var(--eduto-border-card); }
+.eduto-root .eduto-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--eduto-space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--eduto-space-6);
+}
+.eduto-root .eduto-section-head__count {
+  font-family: var(--eduto-font-mono);
+  font-size: var(--eduto-fs-sm);
+  color: var(--eduto-ink-muted);
+}
+
+/* ---- Featured cards ------------------------------------------------ */
+.eduto-root .eduto-featured-card { display: flex; flex-direction: column; }
+.eduto-root .eduto-featured-card .eduto-card__divider { margin: var(--eduto-space-4) 0; }
+.eduto-root .eduto-featured-card__icon {
+  font-size: var(--eduto-fs-xl);
+  line-height: 1;
+  margin-bottom: var(--eduto-space-3);
+}
+
+/* ---- Course card internals ---------------------------------------- */
+.eduto-root .eduto-course-card {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  background-color: var(--eduto-bg);
+}
+.eduto-root .eduto-course-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--eduto-space-2);
+  padding: var(--eduto-space-3) var(--eduto-space-4);
+  border-bottom: var(--eduto-border-divider);
+  background-color: var(--eduto-surface);
+}
+.eduto-root .eduto-course-card__dur {
+  font-family: var(--eduto-font-mono);
+  font-size: var(--eduto-fs-xs);
+  color: var(--eduto-ink-muted);
+  font-weight: var(--eduto-fw-medium);
+}
+.eduto-root .eduto-course-card__body {
+  padding: var(--eduto-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--eduto-space-3);
+  flex: 1;
+}
+.eduto-root .eduto-course-card__title {
+  font-size: var(--eduto-fs-md);
+  font-weight: var(--eduto-fw-bold);
+  line-height: var(--eduto-lh-snug);
+  letter-spacing: var(--eduto-tracking-tight);
+}
+.eduto-root .eduto-course-card__mentor {
+  font-size: var(--eduto-fs-sm);
+  color: var(--eduto-ink-muted);
+}
+.eduto-root .eduto-course-card__mentor b {
+  color: var(--eduto-ink);
+  font-weight: var(--eduto-fw-semibold);
+}
+.eduto-root .eduto-course-card__foot {
+  margin-top: auto;
+  padding: var(--eduto-space-4);
+  border-top: var(--eduto-border-divider);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--eduto-space-3);
+}
+
+/* ---- Pricing ------------------------------------------------------- */
+.eduto-root .eduto-price { display: flex; align-items: baseline; gap: var(--eduto-space-2); }
+.eduto-root .eduto-price__original {
+  font-family: var(--eduto-font-mono);
+  font-size: var(--eduto-fs-sm);
+  color: var(--eduto-ink-muted);
+  text-decoration: line-through;
+}
+.eduto-root .eduto-price__final {
+  font-family: var(--eduto-font-mono);
+  font-size: var(--eduto-fs-lg);
+  font-weight: var(--eduto-fw-bold);
+  color: var(--eduto-ink);
+}
+.eduto-root .eduto-price__save {
+  font-size: var(--eduto-fs-xs);
+  font-weight: var(--eduto-fw-bold);
+  color: var(--eduto-danger);
+}
+
+/* ---- Star rating --------------------------------------------------- */
+.eduto-root .eduto-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--eduto-space-2);
+}
+.eduto-root .eduto-stars__glyphs {
+  font-size: var(--eduto-fs-sm);
+  letter-spacing: 0.06em;
+  color: var(--eduto-border-light);
+  position: relative;
+  display: inline-block;
+}
+.eduto-root .eduto-stars__fill {
+  color: #d98a00;
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.eduto-root .eduto-stars__num {
+  font-family: var(--eduto-font-mono);
+  font-size: var(--eduto-fs-xs);
+  font-weight: var(--eduto-fw-bold);
+  color: var(--eduto-ink);
+}
+
+/* ---- Small ENROLL button for tight card footers -------------------- */
+.eduto-root .eduto-btn-secondary--sm {
+  font-size: var(--eduto-fs-xs);
+  padding: var(--eduto-space-2) var(--eduto-space-4);
+  box-shadow: none;
+}
+.eduto-root .eduto-btn-secondary--sm:hover { box-shadow: var(--eduto-shadow); }
+
+/* ---- Toolbar (search) ---------------------------------------------- */
+.eduto-root .eduto-toolbar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--eduto-space-4);
+  align-items: center;
+  margin-bottom: var(--eduto-space-6);
+}
+.eduto-root .eduto-search { position: relative; }
+.eduto-root .eduto-search__icon {
+  position: absolute;
+  left: var(--eduto-space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--eduto-ink-muted);
+  font-size: var(--eduto-fs-base);
+  pointer-events: none;
+}
+.eduto-root .eduto-search .eduto-input { padding-left: var(--eduto-space-7); }
+
+/* ---- Empty state --------------------------------------------------- */
+.eduto-root .eduto-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: var(--eduto-space-8) var(--eduto-space-5);
+  border: 2px dashed var(--eduto-border-light);
+  color: var(--eduto-ink-muted);
+}
+.eduto-root .eduto-empty__icon {
+  font-size: var(--eduto-fs-2xl);
+  display: block;
+  margin-bottom: var(--eduto-space-3);
+}
+
+/* ---- Badge: danger variant (FLASH SALE) ---------------------------- */
+.eduto-root .eduto-badge--danger {
+  background-color: #fbe9e9;
+  color: var(--eduto-danger);
+  border-color: var(--eduto-danger);
+}
+
+/* ---- Footer -------------------------------------------------------- */
+.eduto-root .eduto-footer {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  border-top: var(--eduto-border-card);
+  background-color: var(--eduto-ink);
+  color: var(--eduto-ink-inverse);
+}
+.eduto-root .eduto-footer__cell {
+  padding: var(--eduto-space-6);
+  border-right: 1px solid rgba(255, 255, 255, 0.16);
+}
+.eduto-root .eduto-footer__cell:last-child { border-right: 0; }
+.eduto-root .eduto-footer__label {
+  font-size: var(--eduto-fs-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--eduto-tracking-wide);
+  font-weight: var(--eduto-fw-bold);
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: var(--eduto-space-3);
+}
+.eduto-root .eduto-footer__brand {
+  font-size: var(--eduto-fs-lg);
+  font-weight: var(--eduto-fw-black);
+  letter-spacing: var(--eduto-tracking-tight);
+}
+.eduto-root .eduto-footer__brand span { color: #4d9fff; }
+.eduto-root .eduto-footer a {
+  color: var(--eduto-ink-inverse);
+  font-family: var(--eduto-font-mono);
+  font-size: var(--eduto-fs-sm);
+  border-bottom-color: rgba(255, 255, 255, 0.4);
+}
+.eduto-root .eduto-footer a:hover { color: #4d9fff; }
+.eduto-root .eduto-footer__note {
+  font-size: var(--eduto-fs-sm);
+  color: rgba(255, 255, 255, 0.6);
+  line-height: var(--eduto-lh-normal);
+}
+
+/* ---- Responsive: tablet 768–1024 ----------------------------------- */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .eduto-root .eduto-section { padding: var(--eduto-space-6) var(--eduto-space-5); }
+  .eduto-root .eduto-hero { padding: var(--eduto-space-7) var(--eduto-space-5); }
+  .eduto-root .eduto-hero__mark { font-size: 11rem; }
+}
+
+/* ---- Responsive: mobile <768 --------------------------------------- */
+@media (max-width: 767px) {
+  .eduto-root .eduto-page { border-left: 0; border-right: 0; box-shadow: none; }
+  .eduto-root .eduto-section { padding: var(--eduto-space-6) var(--eduto-space-4); }
+  .eduto-root .eduto-hero { padding: var(--eduto-space-6) var(--eduto-space-4); }
+  .eduto-root .eduto-hero__mark { font-size: 7rem; bottom: -0.2em; }
+  .eduto-root .eduto-hero__title { font-size: var(--eduto-fs-xl); }
+  .eduto-root .eduto-tabs { overflow-x: auto; flex-wrap: nowrap; }
+  .eduto-root .eduto-tab { white-space: nowrap; }
+  .eduto-root .eduto-toolbar { grid-template-columns: 1fr; }
+  .eduto-root .eduto-footer { grid-template-columns: 1fr; }
+  .eduto-root .eduto-footer__cell {
+    border-right: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  }
+  .eduto-root .eduto-footer__cell:last-child { border-bottom: 0; }
+  .eduto-root .eduto-stat { padding: var(--eduto-space-3) var(--eduto-space-4); }
+}
+
+/* ===================================================================
+   ENROLLMENT PATHWAY — inline 3-step flow injected below a course card.
+   The panel is a full-width grid item, so the cards after it flow down.
+   =================================================================== */
+
+/* Highlight the card whose pathway is currently open. */
+.eduto-root .eduto-course-card--enrolling {
+  box-shadow: var(--eduto-shadow-accent);
+  outline: 2px solid var(--eduto-accent);
+  outline-offset: -2px;
+}
+
+/* ---- Panel shell --------------------------------------------------- */
+.eduto-root .eduto-pathway {
+  grid-column: 1 / -1;
+  border: var(--eduto-border-card);
+  background-color: var(--eduto-bg);
+  box-shadow: var(--eduto-shadow);
+  overflow: hidden;
+  animation: eduto-pathway-open 0.3s ease both;
+}
+@keyframes eduto-pathway-open {
+  from { max-height: 0;      opacity: 0; }
+  to   { max-height: 2000px; opacity: 1; }
+}
+
+.eduto-root .eduto-pathway__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--eduto-space-3);
+  padding: var(--eduto-space-3) var(--eduto-space-4);
+  border-bottom: var(--eduto-border-card);
+  background-color: var(--eduto-ink);
+  color: var(--eduto-ink-inverse);
+}
+.eduto-root .eduto-pathway__tag {
+  font-family: var(--eduto-font-mono);
+  font-size: var(--eduto-fs-xs);
+  font-weight: var(--eduto-fw-bold);
+  letter-spacing: var(--eduto-tracking-wide);
+  text-transform: uppercase;
+}
+.eduto-root .eduto-pathway__close {
+  appearance: none;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: var(--eduto-ink-inverse);
+  font-family: var(--eduto-font-sans);
+  font-size: var(--eduto-fs-xs);
+  font-weight: var(--eduto-fw-bold);
+  letter-spacing: 0.04em;
+  padding: var(--eduto-space-2) var(--eduto-space-3);
+  cursor: pointer;
+  transition:
+    background-color var(--eduto-transition-hover),
+    color            var(--eduto-transition-hover);
+}
+.eduto-root .eduto-pathway__close:hover {
+  background-color: var(--eduto-ink-inverse);
+  color: var(--eduto-ink);
+}
+
+.eduto-root .eduto-pathway__body { padding: var(--eduto-space-6); }
+.eduto-root .eduto-pathway__progress { margin-bottom: var(--eduto-space-6); }
+
+/* ---- Step transitions --------------------------------------------- */
+.eduto-root .eduto-step { animation: eduto-step-fade 0.15s ease both; }
+@keyframes eduto-step-fade {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.eduto-root .eduto-step__title { margin-bottom: var(--eduto-space-2); }
+.eduto-root .eduto-step__intro {
+  color: var(--eduto-ink-muted);
+  margin-bottom: var(--eduto-space-5);
+}
+
+/* ---- Definition list (course detail) ------------------------------ */
+.eduto-root .eduto-deflist {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  border-top: 1px solid var(--eduto-border-light);
+  border-left: 1px solid var(--eduto-border-light);
+  margin-bottom: var(--eduto-space-5);
+}
+.eduto-root .eduto-deflist__item {
+  padding: var(--eduto-space-3) var(--eduto-space-4);
+  border-right: 1px solid var(--eduto-border-light);
+  border-bottom: 1px solid var(--eduto-border-light);
+}
+.eduto-root .eduto-deflist__item--wide { grid-column: 1 / -1; }
+.eduto-root .eduto-deflist__dt {
+  font-size: var(--eduto-fs-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--eduto-tracking-wide);
+  font-weight: var(--eduto-fw-bold);
+  color: var(--eduto-ink-muted);
+  margin-bottom: 4px;
+}
+.eduto-root .eduto-deflist__dd {
+  font-size: var(--eduto-fs-base);
+  font-weight: var(--eduto-fw-semibold);
+}
+
+/* ---- Fee breakdown ------------------------------------------------- */
+.eduto-root .eduto-fee {
+  border: 1px solid var(--eduto-border-light);
+  margin-bottom: var(--eduto-space-5);
+}
+.eduto-root .eduto-fee__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--eduto-space-4);
+  padding: var(--eduto-space-3) var(--eduto-space-4);
+  border-bottom: 1px solid var(--eduto-border-light);
+}
+.eduto-root .eduto-fee__row:last-child { border-bottom: 0; }
+.eduto-root .eduto-fee__row--total {
+  background-color: var(--eduto-surface);
+  border-top: var(--eduto-border-card);
+}
+.eduto-root .eduto-fee__label {
+  font-size: var(--eduto-fs-sm);
+  color: var(--eduto-ink-muted);
+}
+.eduto-root .eduto-fee__row--total .eduto-fee__label {
+  color: var(--eduto-ink);
+  font-weight: var(--eduto-fw-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: var(--eduto-fs-xs);
+}
+.eduto-root .eduto-fee__val {
+  font-family: var(--eduto-font-mono);
+  font-weight: var(--eduto-fw-semibold);
+}
+.eduto-root .eduto-fee__val--cut { color: var(--eduto-danger); }
+.eduto-root .eduto-fee__row--total .eduto-fee__val {
+  font-size: var(--eduto-fs-lg);
+  font-weight: var(--eduto-fw-bold);
+}
+
+/* ---- Action button rows ------------------------------------------- */
+.eduto-root .eduto-pathway__actions {
+  display: flex;
+  gap: var(--eduto-space-3);
+  flex-wrap: wrap;
+  margin-top: var(--eduto-space-6);
+}
+.eduto-root .eduto-pathway__actions--split { justify-content: space-between; }
+
+/* ---- Step 2 form --------------------------------------------------- */
+.eduto-root .eduto-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--eduto-space-5);
+  margin-bottom: var(--eduto-space-5);
+}
+.eduto-root .eduto-form-grid__full { grid-column: 1 / -1; }
+
+.eduto-root .eduto-summary-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--eduto-space-4);
+  flex-wrap: wrap;
+  padding: var(--eduto-space-4);
+  border: 1px solid var(--eduto-border-light);
+  background-color: var(--eduto-surface);
+  margin-bottom: var(--eduto-space-2);
+}
+.eduto-root .eduto-summary-line__fee {
+  font-family: var(--eduto-font-mono);
+  font-size: var(--eduto-fs-md);
+  font-weight: var(--eduto-fw-bold);
+}
+
+/* ---- Step 3 success ------------------------------------------------ */
+.eduto-root .eduto-success-head {
+  display: flex;
+  align-items: center;
+  gap: var(--eduto-space-4);
+  margin-bottom: var(--eduto-space-5);
+}
+.eduto-root .eduto-success-tick {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 3rem;
+  height: 3rem;
+  background-color: var(--eduto-success);
+  color: #ffffff;
+  font-size: var(--eduto-fs-lg);
+  border: 2px solid var(--eduto-ink);
+  box-shadow: var(--eduto-shadow);
+}
+.eduto-root .eduto-pay-id {
+  border: var(--eduto-border-card);
+  box-shadow: var(--eduto-shadow);
+  background-color: var(--eduto-surface);
+  padding: var(--eduto-space-5);
+  margin-bottom: var(--eduto-space-5);
+  animation: eduto-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes eduto-pop {
+  0%   { transform: scale(0.82); opacity: 0; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+.eduto-root .eduto-pay-id__label {
+  font-size: var(--eduto-fs-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--eduto-tracking-wide);
+  font-weight: var(--eduto-fw-bold);
+  color: var(--eduto-ink-muted);
+  margin-bottom: var(--eduto-space-3);
+}
+.eduto-root .eduto-pay-id__main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--eduto-space-4);
+  flex-wrap: wrap;
+}
+.eduto-root .eduto-pay-id__value {
+  font-family: var(--eduto-font-mono);
+  font-size: var(--eduto-fs-lg);
+  font-weight: var(--eduto-fw-bold);
+  letter-spacing: 0.04em;
+  word-break: break-all;
+}
+.eduto-root .eduto-copy-btn {
+  appearance: none;
+  background-color: var(--eduto-bg);
+  border: 2px solid var(--eduto-border-heavy);
+  font-family: var(--eduto-font-sans);
+  font-size: var(--eduto-fs-xs);
+  font-weight: var(--eduto-fw-bold);
+  letter-spacing: 0.04em;
+  padding: var(--eduto-space-2) var(--eduto-space-3);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color var(--eduto-transition-hover),
+    color            var(--eduto-transition-hover);
+}
+.eduto-root .eduto-copy-btn:hover {
+  background-color: var(--eduto-ink);
+  color: var(--eduto-ink-inverse);
+}
+.eduto-root .eduto-copy-btn--done {
+  background-color: var(--eduto-success);
+  border-color: var(--eduto-success);
+  color: #ffffff;
+}
+
+/* WhatsApp action — green, used alongside .eduto-btn-primary base. */
+.eduto-root .eduto-btn-wa {
+  background-color: var(--eduto-success);
+  border-color: var(--eduto-success);
+  color: #ffffff;
+}
+.eduto-root .eduto-btn-wa:hover {
+  background-color: #18632f;
+  border-color: #18632f;
+}
+.eduto-root .eduto-btn-wa:active {
+  background-color: #134d25;
+  border-color: #134d25;
+}
+
+.eduto-root .eduto-restart {
+  margin-top: var(--eduto-space-5);
+  padding-top: var(--eduto-space-5);
+  border-top: 1px solid var(--eduto-border-light);
+  text-align: center;
+}
+
+/* ---- Pathway responsive ------------------------------------------- */
+@media (max-width: 767px) {
+  .eduto-root .eduto-pathway__body { padding: var(--eduto-space-4); }
+  .eduto-root .eduto-deflist { grid-template-columns: 1fr; }
+  .eduto-root .eduto-form-grid { grid-template-columns: 1fr; }
+  .eduto-root .eduto-pathway__actions { flex-direction: column; }
+  .eduto-root .eduto-pathway__actions .eduto-btn-primary,
+  .eduto-root .eduto-pathway__actions .eduto-btn-secondary { width: 100%; }
+}
+
+/* ===================================================================
+   TOP UTILITY BAR + MY ENROLLMENTS
+   =================================================================== */
+
+.eduto-root .eduto-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--eduto-space-3);
+  padding: var(--eduto-space-3) var(--eduto-space-5);
+  border-bottom: var(--eduto-border-card);
+  background-color: var(--eduto-bg);
+}
+.eduto-root .eduto-topbar__brand {
+  font-family: var(--eduto-font-mono);
+  font-size: var(--eduto-fs-xs);
+  font-weight: var(--eduto-fw-bold);
+  letter-spacing: var(--eduto-tracking-wide);
+  text-transform: uppercase;
+  color: var(--eduto-ink-muted);
+}
+
+.eduto-root .eduto-enroll-link {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--eduto-space-2);
+  background-color: var(--eduto-bg);
+  border: 2px solid var(--eduto-border-heavy);
+  font-family: var(--eduto-font-sans);
+  font-size: var(--eduto-fs-xs);
+  font-weight: var(--eduto-fw-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--eduto-ink);
+  padding: var(--eduto-space-2) var(--eduto-space-3);
+  cursor: pointer;
+  transition:
+    background-color var(--eduto-transition-hover),
+    color            var(--eduto-transition-hover);
+}
+.eduto-root .eduto-enroll-link:hover,
+.eduto-root .eduto-enroll-link--active {
+  background-color: var(--eduto-ink);
+  color: var(--eduto-ink-inverse);
+}
+.eduto-root .eduto-enroll-link__count {
+  font-family: var(--eduto-font-mono);
+  background-color: var(--eduto-accent);
+  color: #ffffff;
+  padding: 1px 6px;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.eduto-root .eduto-myenroll {
+  border-bottom: var(--eduto-border-card);
+  background-color: var(--eduto-surface);
+  overflow: hidden;
+  animation: eduto-pathway-open 0.3s ease both;
+}
+.eduto-root .eduto-myenroll__inner { padding: var(--eduto-space-6) var(--eduto-space-7); }
+.eduto-root .eduto-myenroll__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--eduto-space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--eduto-space-5);
+}
+.eduto-root .eduto-myenroll__list { display: grid; gap: var(--eduto-space-3); }
+
+.eduto-root .eduto-myenroll__empty {
+  text-align: center;
+  padding: var(--eduto-space-7) var(--eduto-space-5);
+  border: 2px dashed var(--eduto-border-light);
+  background-color: var(--eduto-bg);
+  color: var(--eduto-ink-muted);
+}
+.eduto-root .eduto-myenroll__empty-icon {
+  font-size: var(--eduto-fs-2xl);
+  display: block;
+  margin-bottom: var(--eduto-space-3);
+}
+
+.eduto-root .eduto-enroll-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--eduto-space-4);
+  align-items: center;
+  padding: var(--eduto-space-4);
+  background-color: var(--eduto-bg);
+  border: var(--eduto-border-card);
+  box-shadow: var(--eduto-shadow);
+}
+.eduto-root .eduto-enroll-row__title {
+  font-size: var(--eduto-fs-md);
+  font-weight: var(--eduto-fw-bold);
+  letter-spacing: var(--eduto-tracking-tight);
+  margin-bottom: var(--eduto-space-2);
+}
+.eduto-root .eduto-enroll-row__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--eduto-space-3);
+  flex-wrap: wrap;
+  font-size: var(--eduto-fs-sm);
+  color: var(--eduto-ink-muted);
+}
+.eduto-root .eduto-enroll-row__actions {
+  display: flex;
+  gap: var(--eduto-space-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 767px) {
+  .eduto-root .eduto-myenroll__inner { padding: var(--eduto-space-5) var(--eduto-space-4); }
+  .eduto-root .eduto-enroll-row { grid-template-columns: 1fr; }
+  .eduto-root .eduto-enroll-row__actions { justify-content: stretch; }
+  .eduto-root .eduto-enroll-row__actions .eduto-btn-secondary { flex: 1; }
+}
+

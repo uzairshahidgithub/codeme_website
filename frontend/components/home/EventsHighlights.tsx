@@ -113,7 +113,7 @@ function EventCard({ e }: { e: EventRow }) {
             boxShadow: '0 8px 22px -12px color-mix(in oklab, var(--blue) 55%, transparent)',
           }}
         >
-          Join
+          Register
           <ArrowSvg size={11} />
         </Link>
         <AddToCalendar

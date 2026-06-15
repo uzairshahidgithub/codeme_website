@@ -1,0 +1,316 @@
+<!-- 
+  ASSUMPTION: 
+  Huashu-Design is assumed to be a Web Component library distributed via CDN, 
+  exposing custom HTML elements like <hu-card>, <hu-button>, <hu-grid>, etc. 
+  The import for initEdutoTheme uses the alias '@/lib/eduto-theme.js' as requested, 
+  assuming this file will be processed by a bundler (like Webpack/Next.js) that resolves the alias, 
+  or it should be changed to a relative path if used directly in a browser without a build step.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eduto Enrollment</title>
+  
+  <!-- Link to Huashu-Design CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/huashu-design@latest/dist/huashu.min.js"></script>
+
+  <style>
+    /* CSS transition for card filtering (opacity and max-height) */
+    .course-card {
+      transition: opacity 0.4s ease, transform 0.4s ease, max-height 0.4s ease, padding 0.4s ease, margin 0.4s ease, border 0.4s ease;
+      opacity: 1;
+      transform: scale(1);
+      max-height: 800px; /* arbitrary large value */
+      overflow: hidden;
+      transform-origin: top;
+    }
+    
+    .course-card.hidden {
+      opacity: 0;
+      transform: scale(0.95);
+      max-height: 0;
+      margin-top: 0;
+      margin-bottom: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      border-width: 0;
+      pointer-events: none;
+    }
+
+    /* Fallback styles in case Huashu CDN fails to load */
+    :not(:defined) {
+      display: block;
+      padding: 8px;
+    }
+    hu-grid:not(:defined) {
+      display: grid;
+      gap: 16px;
+    }
+    hu-grid[columns="3"]:not(:defined) { grid-template-columns: repeat(3, 1fr); }
+    hu-grid[columns="4"]:not(:defined) { grid-template-columns: repeat(4, 1fr); }
+    hu-card:not(:defined) {
+      border: 1px solid var(--hu-color-border, #ccc);
+      padding: 16px;
+    }
+
+    /* Basic responsive layout for grids */
+    @media (max-width: 768px) {
+      hu-grid[columns="3"],
+      hu-grid[columns="4"] {
+        grid-template-columns: 1fr !important;
+      }
+    }
+    @media (min-width: 769px) and (max-width: 1024px) {
+      hu-grid[columns="4"] {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+    }
+    
+    /* Ensure tabs are focusable and show outline */
+    hu-tab:focus-visible {
+      outline: 2px solid var(--hu-color-primary, blue);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <!-- All scoping isolated to this container per Phase 0 -->
+  <div id="eduto-root">
+    
+    <!-- a. HERO BANNER -->
+    <hu-box border-bottom="heavy" padding="xl">
+      <hu-text variant="h1" weight="bold">Learn Real-World Skills. Online. Professional.</hu-text>
+      <hu-text variant="subtitle" color="muted">Join 5,000+ learners at Eduto Institute.</hu-text>
+    </hu-box>
+
+    <!-- b. CATEGORY TABS -->
+    <hu-box margin-top="lg" margin-bottom="lg" padding-x="xl">
+      <!-- Added tabindex for keyboard navigation inside tabs -->
+      <hu-tabs id="category-tabs" variant="sharp" role="tablist">
+        <hu-tab value="all" active tabindex="0" role="tab" aria-selected="true">All</hu-tab>
+        <hu-tab value="Frontend" tabindex="0" role="tab" aria-selected="false">Frontend</hu-tab>
+        <hu-tab value="Backend" tabindex="0" role="tab" aria-selected="false">Backend</hu-tab>
+        <hu-tab value="DevOps" tabindex="0" role="tab" aria-selected="false">DevOps</hu-tab>
+        <hu-tab value="Design" tabindex="0" role="tab" aria-selected="false">Design</hu-tab>
+        <hu-tab value="Data Science" tabindex="0" role="tab" aria-selected="false">Data Science</hu-tab>
+        <hu-tab value="Mobile" tabindex="0" role="tab" aria-selected="false">Mobile</hu-tab>
+      </hu-tabs>
+    </hu-box>
+
+    <!-- c. FEATURED SECTION -->
+    <hu-box margin-bottom="xl" padding-x="xl">
+      <hu-text variant="h2" weight="bold" margin-bottom="md">Featured</hu-text>
+      <hu-grid columns="3" gap="md">
+        
+        <!-- Featured Card 1 -->
+        <hu-card variant="sharp">
+          <hu-badge color="red" variant="outline">⚡ Flash Sale</hu-badge>
+          <hu-text variant="h3" weight="bold" margin-top="sm">Python Professional</hu-text>
+          <div style="margin-top: 8px; margin-bottom: 16px;">
+            <hu-text strikethrough color="muted">₹8000</hu-text>
+            <hu-text weight="bold" size="lg" style="margin-left: 8px;">₹5000</hu-text>
+          </div>
+          <hu-button variant="primary" sharp data-course-id="PYTHON-PRO">ENROLL</hu-button>
+        </hu-card>
+
+        <!-- Featured Card 2 -->
+        <hu-card variant="sharp">
+          <hu-badge color="orange" variant="outline">🔥 Trending</hu-badge>
+          <hu-text variant="h3" weight="bold" margin-top="sm">Rust Systems Programming</hu-text>
+          <div style="margin-top: 8px; margin-bottom: 16px;">
+            <hu-text weight="bold" size="lg">₹7500</hu-text>
+          </div>
+          <hu-button variant="primary" sharp data-course-id="RUST-SYS">ENROLL</hu-button>
+        </hu-card>
+
+        <!-- Featured Card 3 -->
+        <hu-card variant="sharp">
+          <hu-badge color="green" variant="outline">🆕 New</hu-badge>
+          <hu-text variant="h3" weight="bold" margin-top="sm">Data Science with Python</hu-text>
+          <div style="margin-top: 8px; margin-bottom: 16px;">
+            <hu-text weight="bold" size="lg">₹9000</hu-text>
+          </div>
+          <hu-button variant="primary" sharp data-course-id="DATASCI-PY">ENROLL</hu-button>
+        </hu-card>
+
+      </hu-grid>
+    </hu-box>
+
+    <!-- d. FULL COURSE LIBRARY -->
+    <hu-box margin-bottom="xl" padding-x="xl">
+      <hu-text variant="h2" weight="bold" margin-bottom="md">Course Library</hu-text>
+      
+      <hu-grid id="course-grid" columns="4" gap="md">
+        <!-- Javascript will inject 12 course cards here -->
+      </hu-grid>
+      
+      <hu-empty id="empty-state" class="hidden" message="No courses in this category yet." style="display: none; padding: 48px; text-align: center;"></hu-empty>
+    </hu-box>
+
+    <!-- e. FOOTER -->
+    <hu-box border-top="solid" padding="lg">
+      <hu-text align="center">feedback@codemoteams.org | WhatsApp: +91-XXXXXXXXXX</hu-text>
+    </hu-box>
+
+  </div>
+
+  <!-- MODULE SCRIPT -->
+  <script type="module">
+    // 1. IMPORT THEME 
+    import { initEdutoTheme } from '@/lib/eduto-theme.js';
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      // Initialize styling and dark mode sync inside #eduto-root
+      initEdutoTheme();
+
+      // 4. STATE MANAGEMENT
+      window.EdutoState = {
+        currentCategory: 'all',
+        enrolledCourses: []
+      };
+
+      // Full course data
+      const courses = [
+        { id: 'PYTHON-PRO', title: 'Python Professional', category: 'Backend', duration: '8 weeks', origPrice: '₹8000', price: '₹5000', rating: '★4.9', mentor: 'Rahul Sharma' },
+        { id: 'RUST-SYS', title: 'Rust Systems Programming', category: 'Backend', duration: '10 weeks', origPrice: null, price: '₹7500', rating: '★4.9', mentor: 'Priya Patel' },
+        { id: 'DOCKER-K8S', title: 'Docker & Kubernetes', category: 'DevOps', duration: '6 weeks', origPrice: null, price: '₹8000', rating: '★4.7', mentor: 'Amit Gupta' },
+        { id: 'WEBDEV-PRO', title: 'Web Development Pro', category: 'Frontend', duration: '8 weeks', origPrice: null, price: '₹5000', rating: '★4.8', mentor: 'Sneha Reddy' },
+        { id: 'REACT-PRO', title: 'React Professional', category: 'Frontend', duration: '6 weeks', origPrice: null, price: '₹6000', rating: '★4.8', mentor: 'Vikram Singh' },
+        { id: 'UIUX-DESIGN', title: 'UI/UX Design', category: 'Design', duration: '4 weeks', origPrice: null, price: '₹4500', rating: '★4.6', mentor: 'Ananya Iyer' },
+        { id: 'FLUTTER-MOB', title: 'Flutter Mobile Dev', category: 'Mobile', duration: '8 weeks', origPrice: null, price: '₹7000', rating: '★4.5', mentor: 'Karan Joshi' },
+        { id: 'DATASCI-PY', title: 'Data Science with Python', category: 'Data Science', duration: '8 weeks', origPrice: null, price: '₹9000', rating: '★4.7', mentor: 'Dr. Meera Nair' },
+        { id: 'NODE-BACK', title: 'Node.js Backend', category: 'Backend', duration: '6 weeks', origPrice: null, price: '₹6500', rating: '★4.6', mentor: 'Arjun Mehta' },
+        { id: 'TS-MASTERY', title: 'TypeScript Mastery', category: 'Frontend', duration: '4 weeks', origPrice: null, price: '₹4000', rating: '★4.8', mentor: 'Sneha Reddy' },
+        { id: 'AWS-CLOUD', title: 'AWS Cloud Practitioner', category: 'DevOps', duration: '6 weeks', origPrice: null, price: '₹7500', rating: '★4.5', mentor: 'Amit Gupta' },
+        { id: 'FIGMA-DEV', title: 'Figma for Developers', category: 'Design', duration: '3 weeks', origPrice: null, price: '₹3500', rating: '★4.7', mentor: 'Ananya Iyer' }
+      ];
+
+      const grid = document.getElementById('course-grid');
+      const emptyState = document.getElementById('empty-state');
+      
+      // Render Course Library Cards
+      courses.forEach(course => {
+        const card = document.createElement('hu-card');
+        card.setAttribute('variant', 'sharp');
+        card.setAttribute('data-category', course.category);
+        card.className = 'course-card'; // for CSS transition
+        
+        let priceHtml = '';
+        if (course.origPrice) {
+          priceHtml = `
+            <hu-text strikethrough color="muted">${course.origPrice}</hu-text> 
+            <hu-text weight="bold" size="lg" style="margin-left: 6px;">${course.price}</hu-text>
+          `;
+        } else {
+          priceHtml = `<hu-text weight="bold" size="lg">${course.price}</hu-text>`;
+        }
+
+        card.innerHTML = `
+          <div style="display: flex; flex-direction: column; height: 100%; justify-content: space-between;">
+            <div>
+              <hu-badge variant="outline">${course.category}</hu-badge>
+              <hu-text variant="h3" weight="bold" margin-top="sm" margin-bottom="xs">${course.title}</hu-text>
+              <hu-text color="muted" size="sm" margin-bottom="md">${course.duration}</hu-text>
+              
+              <div style="margin-bottom: 12px;">${priceHtml}</div>
+              
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <hu-text size="sm" style="color: #eab308;">${course.rating}</hu-text>
+                <hu-text color="muted" size="sm">${course.mentor}</hu-text>
+              </div>
+            </div>
+            
+            <hu-button variant="primary" sharp data-course-id="${course.id}" style="width: 100%;">ENROLL</hu-button>
+          </div>
+        `;
+        
+        grid.appendChild(card);
+      });
+
+      // 3. FILTERING LOGIC
+      const tabs = document.querySelectorAll('hu-tab');
+      
+      function filterCourses() {
+        const cat = window.EdutoState.currentCategory;
+        const allCards = grid.querySelectorAll('.course-card');
+        let visibleCount = 0;
+        
+        allCards.forEach(card => {
+          if (cat === 'all' || card.getAttribute('data-category') === cat) {
+            card.classList.remove('hidden');
+            visibleCount++;
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+        
+        // Handle empty state
+        if (visibleCount === 0) {
+          emptyState.style.display = 'block';
+          // If <hu-empty> is not supported, inject text fallback
+          if(emptyState.innerHTML === '') {
+             emptyState.innerHTML = '<hu-text color="muted">No courses in this category yet.</hu-text>';
+          }
+        } else {
+          emptyState.style.display = 'none';
+        }
+      }
+
+      tabs.forEach(tab => {
+        const selectTab = () => {
+          // Visual update
+          tabs.forEach(t => {
+            t.removeAttribute('active');
+            t.setAttribute('aria-selected', 'false');
+          });
+          tab.setAttribute('active', 'true');
+          tab.setAttribute('aria-selected', 'true');
+          
+          // State update & Filter
+          window.EdutoState.currentCategory = tab.getAttribute('value');
+          filterCourses();
+        };
+
+        // Click interaction
+        tab.addEventListener('click', selectTab);
+        
+        // 6. Accessibility (Keyboard Navigation)
+        tab.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            selectTab();
+          }
+        });
+      });
+
+      // Event Delegation for "ENROLL" clicks
+      document.getElementById('eduto-root').addEventListener('click', (e) => {
+        // Support custom elements where the event target might be inner shadow DOM
+        // or standard element traversal.
+        const path = e.composedPath ? e.composedPath() : [];
+        let targetBtn = null;
+        
+        // Search path for elements with data-course-id
+        for (let el of path) {
+          if (el && el.getAttribute && el.getAttribute('data-course-id')) {
+            targetBtn = el;
+            break;
+          }
+        }
+        
+        // Fallback for older browsers
+        if (!targetBtn && e.target.closest) {
+          targetBtn = e.target.closest('[data-course-id]');
+        }
+        
+        if (targetBtn) {
+          const courseId = targetBtn.getAttribute('data-course-id');
+          console.log(courseId);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Eduto Institute — Course Library</title>
+
+  <!-- Eduto design system: tokens, components, utilities, all scoped to .eduto-root -->
+  <link rel="stylesheet" href="eduto-design-system.css" />
+
+  <!--
+    PAGE-SPECIFIC STYLES
+    Every selector below is prefixed `.eduto-root` so the browse page
+    cannot leak styles onto the host site's navbar/sidebar. Anything
+    reusable (cards, buttons, badges, grid) comes from the design system.
+  -->
+  <style>
+    /* Plain page chrome — outside the scope, kept minimal & neutral. */
+    html, body { margin: 0; padding: 0; }
+    body {
+      background-color: #ececec;
+      /* subtle paper grid so the bordered cards read as "pinned" */
+      background-image:
+        linear-gradient(rgba(0,0,0,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    /* ---- Page shell ---------------------------------------------- */
+    .eduto-root .eduto-page {
+      background-color: var(--eduto-bg);
+      max-width: 1320px;
+      margin: var(--eduto-space-6) auto;
+      border: var(--eduto-border-card);
+      box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.12);
+    }
+
+    /* ---- Masthead ------------------------------------------------ */
+    .eduto-root .eduto-masthead {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: var(--eduto-space-4);
+      flex-wrap: wrap;
+      padding: var(--eduto-space-4) var(--eduto-space-5);
+      border-bottom: var(--eduto-border-card);
+      background-color: var(--eduto-bg);
+    }
+    .eduto-root .eduto-logo {
+      font-weight: var(--eduto-fw-black);
+      font-size: var(--eduto-fs-md);
+      letter-spacing: var(--eduto-tracking-tight);
+    }
+    .eduto-root .eduto-logo span { color: var(--eduto-accent); }
+    .eduto-root .eduto-masthead__meta {
+      font-family: var(--eduto-font-mono);
+      font-size: var(--eduto-fs-xs);
+      color: var(--eduto-ink-muted);
+      letter-spacing: 0.02em;
+    }
+
+    /* ---- Hero banner --------------------------------------------- */
+    .eduto-root .eduto-hero {
+      position: relative;
+      padding: var(--eduto-space-8) var(--eduto-space-7);
+      border-bottom: var(--eduto-border-card);
+      background-color: var(--eduto-surface);
+      /* hairline diagonal texture for a "printed" feel */
+      background-image: repeating-linear-gradient(
+        -45deg,
+        transparent 0 22px,
+        rgba(0, 0, 0, 0.022) 22px 23px
+      );
+      overflow: hidden;
+    }
+    .eduto-root .eduto-hero__eyebrow { margin-bottom: var(--eduto-space-4); }
+    .eduto-root .eduto-hero__title {
+      max-width: 18ch;
+      margin-bottom: var(--eduto-space-4);
+    }
+    /* the three words get weight + color contrast — editorial signature */
+    .eduto-root .eduto-hero__title em {
+      font-style: normal;
+      display: block;
+    }
+    .eduto-root .eduto-hero__title .w-accent { color: var(--eduto-accent); }
+    .eduto-root .eduto-hero__sub {
+      font-size: var(--eduto-fs-md);
+      color: var(--eduto-ink-muted);
+      max-width: 42ch;
+    }
+    .eduto-root .eduto-hero__sub b { color: var(--eduto-ink); font-weight: var(--eduto-fw-bold); }
+    /* oversized index numeral, grid-breaking */
+    .eduto-root .eduto-hero__mark {
+      position: absolute;
+      right: -0.08em;
+      bottom: -0.34em;
+      font-family: var(--eduto-font-mono);
+      font-weight: 700;
+      font-size: 16rem;
+      line-height: 1;
+      color: rgba(26, 26, 26, 0.05);
+      pointer-events: none;
+      user-select: none;
+    }
+    .eduto-root .eduto-hero__stats {
+      display: flex;
+      gap: 0;
+      margin-top: var(--eduto-space-6);
+      border: var(--eduto-border-card);
+      width: fit-content;
+      background-color: var(--eduto-bg);
+    }
+    .eduto-root .eduto-stat {
+      padding: var(--eduto-space-3) var(--eduto-space-5);
+      border-right: var(--eduto-border-divider);
+    }
+    .eduto-root .eduto-stat:last-child { border-right: 0; }
+    .eduto-root .eduto-stat__num {
+      font-family: var(--eduto-font-mono);
+      font-size: var(--eduto-fs-lg);
+      font-weight: var(--eduto-fw-bold);
+    }
+    .eduto-root .eduto-stat__label {
+      font-size: var(--eduto-fs-xs);
+      text-transform: uppercase;
+      letter-spacing: var(--eduto-tracking-wide);
+      color: var(--eduto-ink-muted);
+      font-weight: var(--eduto-fw-bold);
+    }
+
+    /* ---- Category tabs ------------------------------------------- */
+    .eduto-root .eduto-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      border-bottom: var(--eduto-border-card);
+      background-color: var(--eduto-bg);
+    }
+    .eduto-root .eduto-tab {
+      appearance: none;
+      background-color: transparent;
+      border: 0;
+      border-right: var(--eduto-border-divider);
+      border-bottom: 3px solid transparent;
+      padding: var(--eduto-space-4) var(--eduto-space-5);
+      font-family: var(--eduto-font-sans);
+      font-size: var(--eduto-fs-sm);
+      font-weight: var(--eduto-fw-bold);
+      letter-spacing: 0.02em;
+      color: var(--eduto-ink-muted);
+      cursor: pointer;
+      transition:
+        background-color var(--eduto-transition-step),
+        color            var(--eduto-transition-step),
+        border-color     var(--eduto-transition-step);
+    }
+    .eduto-root .eduto-tab:hover {
+      background-color: var(--eduto-surface);
+      color: var(--eduto-ink);
+    }
+    .eduto-root .eduto-tab--active {
+      color: var(--eduto-ink);
+      border-bottom: 3px solid var(--eduto-border-heavy);
+    }
+    .eduto-root .eduto-tab__count {
+      font-family: var(--eduto-font-mono);
+      font-size: var(--eduto-fs-xs);
+      color: var(--eduto-ink-muted);
+      margin-left: var(--eduto-space-2);
+    }
+
+    /* ---- Section scaffolding ------------------------------------- */
+    .eduto-root .eduto-section { padding: var(--eduto-space-7) var(--eduto-space-7); }
+    .eduto-root .eduto-section + .eduto-section { border-top: var(--eduto-border-card); }
+    .eduto-root .eduto-section-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: var(--eduto-space-4);
+      flex-wrap: wrap;
+      margin-bottom: var(--eduto-space-6);
+    }
+    .eduto-root .eduto-section-head__count {
+      font-family: var(--eduto-font-mono);
+      font-size: var(--eduto-fs-sm);
+      color: var(--eduto-ink-muted);
+    }
+
+    /* ---- Featured cards ------------------------------------------ */
+    .eduto-root .eduto-featured-card { display: flex; flex-direction: column; }
+    .eduto-root .eduto-featured-card .eduto-card__divider { margin: var(--eduto-space-4) 0; }
+    .eduto-root .eduto-featured-card__icon {
+      font-size: var(--eduto-fs-xl);
+      line-height: 1;
+      margin-bottom: var(--eduto-space-3);
+    }
+
+    /* ---- Course card internals ----------------------------------- */
+    .eduto-root .eduto-course-card {
+      display: flex;
+      flex-direction: column;
+      padding: 0;            /* override default card padding; use sections */
+      background-color: var(--eduto-bg);
+    }
+    .eduto-root .eduto-course-card__top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--eduto-space-2);
+      padding: var(--eduto-space-3) var(--eduto-space-4);
+      border-bottom: var(--eduto-border-divider);
+      background-color: var(--eduto-surface);
+    }
+    .eduto-root .eduto-course-card__dur {
+      font-family: var(--eduto-font-mono);
+      font-size: var(--eduto-fs-xs);
+      color: var(--eduto-ink-muted);
+      font-weight: var(--eduto-fw-medium);
+    }
+    .eduto-root .eduto-course-card__body {
+      padding: var(--eduto-space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--eduto-space-3);
+      flex: 1;
+    }
+    .eduto-root .eduto-course-card__title {
+      font-size: var(--eduto-fs-md);
+      font-weight: var(--eduto-fw-bold);
+      line-height: var(--eduto-lh-snug);
+      letter-spacing: var(--eduto-tracking-tight);
+    }
+    .eduto-root .eduto-course-card__mentor {
+      font-size: var(--eduto-fs-sm);
+      color: var(--eduto-ink-muted);
+    }
+    .eduto-root .eduto-course-card__mentor b {
+      color: var(--eduto-ink);
+      font-weight: var(--eduto-fw-semibold);
+    }
+    .eduto-root .eduto-course-card__foot {
+      margin-top: auto;
+      padding: var(--eduto-space-4);
+      border-top: var(--eduto-border-divider);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--eduto-space-3);
+    }
+
+    /* ---- Pricing ------------------------------------------------- */
+    .eduto-root .eduto-price { display: flex; align-items: baseline; gap: var(--eduto-space-2); }
+    .eduto-root .eduto-price__original {
+      font-family: var(--eduto-font-mono);
+      font-size: var(--eduto-fs-sm);
+      color: var(--eduto-ink-muted);
+      text-decoration: line-through;
+    }
+    .eduto-root .eduto-price__final {
+      font-family: var(--eduto-font-mono);
+      font-size: var(--eduto-fs-lg);
+      font-weight: var(--eduto-fw-bold);
+      color: var(--eduto-ink);
+    }
+    .eduto-root .eduto-price__save {
+      font-size: var(--eduto-fs-xs);
+      font-weight: var(--eduto-fw-bold);
+      color: var(--eduto-danger);
+    }
+
+    /* ---- Star rating --------------------------------------------- */
+    .eduto-root .eduto-stars {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--eduto-space-2);
+    }
+    .eduto-root .eduto-stars__glyphs {
+      font-size: var(--eduto-fs-sm);
+      letter-spacing: 0.06em;
+      color: var(--eduto-border-light);
+      position: relative;
+      display: inline-block;
+    }
+    .eduto-root .eduto-stars__fill {
+      color: #d98a00;            /* warm gold — a rating tint, not the accent */
+      position: absolute;
+      left: 0;
+      top: 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .eduto-root .eduto-stars__num {
+      font-family: var(--eduto-font-mono);
+      font-size: var(--eduto-fs-xs);
+      font-weight: var(--eduto-fw-bold);
+      color: var(--eduto-ink);
+    }
+
+    /* ---- Smaller ENROLL button for tight card footers ------------ */
+    .eduto-root .eduto-btn-secondary--sm {
+      font-size: var(--eduto-fs-xs);
+      padding: var(--eduto-space-2) var(--eduto-space-4);
+      box-shadow: none;
+    }
+    .eduto-root .eduto-btn-secondary--sm:hover { box-shadow: var(--eduto-shadow); }
+
+    /* ---- Toolbar (search) ---------------------------------------- */
+    .eduto-root .eduto-toolbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: var(--eduto-space-4);
+      align-items: center;
+      margin-bottom: var(--eduto-space-6);
+    }
+    .eduto-root .eduto-search { position: relative; }
+    .eduto-root .eduto-search__icon {
+      position: absolute;
+      left: var(--eduto-space-3);
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--eduto-ink-muted);
+      font-size: var(--eduto-fs-base);
+      pointer-events: none;
+    }
+    .eduto-root .eduto-search .eduto-input { padding-left: var(--eduto-space-7); }
+
+    /* ---- Empty state --------------------------------------------- */
+    .eduto-root .eduto-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: var(--eduto-space-8) var(--eduto-space-5);
+      border: 2px dashed var(--eduto-border-light);
+      color: var(--eduto-ink-muted);
+    }
+    .eduto-root .eduto-empty[hidden] { display: none; }
+    .eduto-root .eduto-empty__icon { font-size: var(--eduto-fs-2xl); display: block; margin-bottom: var(--eduto-space-3); }
+
+    /* ---- Badge: danger variant (FLASH SALE) — extends the system - */
+    .eduto-root .eduto-badge--danger {
+      background-color: #fbe9e9;
+      color: var(--eduto-danger);
+      border-color: var(--eduto-danger);
+    }
+
+    /* ---- Footer -------------------------------------------------- */
+    .eduto-root .eduto-footer {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 1fr;
+      border-top: var(--eduto-border-card);
+      background-color: var(--eduto-ink);
+      color: var(--eduto-ink-inverse);
+    }
+    .eduto-root .eduto-footer__cell {
+      padding: var(--eduto-space-6);
+      border-right: 1px solid rgba(255, 255, 255, 0.16);
+    }
+    .eduto-root .eduto-footer__cell:last-child { border-right: 0; }
+    .eduto-root .eduto-footer__label {
+      font-size: var(--eduto-fs-xs);
+      text-transform: uppercase;
+      letter-spacing: var(--eduto-tracking-wide);
+      font-weight: var(--eduto-fw-bold);
+      color: rgba(255, 255, 255, 0.55);
+      margin-bottom: var(--eduto-space-3);
+    }
+    .eduto-root .eduto-footer__brand {
+      font-size: var(--eduto-fs-lg);
+      font-weight: var(--eduto-fw-black);
+      letter-spacing: var(--eduto-tracking-tight);
+    }
+    .eduto-root .eduto-footer__brand span { color: #4d9fff; }
+    .eduto-root .eduto-footer a {
+      color: var(--eduto-ink-inverse);
+      font-family: var(--eduto-font-mono);
+      font-size: var(--eduto-fs-sm);
+      border-bottom-color: rgba(255, 255, 255, 0.4);
+    }
+    .eduto-root .eduto-footer a:hover { color: #4d9fff; }
+    .eduto-root .eduto-footer__note {
+      font-size: var(--eduto-fs-sm);
+      color: rgba(255, 255, 255, 0.6);
+      line-height: var(--eduto-lh-normal);
+    }
+
+    /* ---- Responsive: tablet 768–1024 ----------------------------- */
+    @media (min-width: 768px) and (max-width: 1024px) {
+      .eduto-root .eduto-section { padding: var(--eduto-space-6) var(--eduto-space-5); }
+      .eduto-root .eduto-hero { padding: var(--eduto-space-7) var(--eduto-space-5); }
+      .eduto-root .eduto-hero__mark { font-size: 11rem; }
+    }
+
+    /* ---- Responsive: mobile <768 --------------------------------- */
+    @media (max-width: 767px) {
+      .eduto-root .eduto-page { margin: 0; border-left: 0; border-right: 0; box-shadow: none; }
+      .eduto-root .eduto-section { padding: var(--eduto-space-6) var(--eduto-space-4); }
+      .eduto-root .eduto-hero { padding: var(--eduto-space-6) var(--eduto-space-4); }
+      .eduto-root .eduto-hero__mark { font-size: 7rem; bottom: -0.2em; }
+      .eduto-root .eduto-hero__title { font-size: var(--eduto-fs-xl); }
+      .eduto-root .eduto-tabs { overflow-x: auto; flex-wrap: nowrap; }
+      .eduto-root .eduto-tab { white-space: nowrap; }
+      .eduto-root .eduto-toolbar { grid-template-columns: 1fr; }
+      .eduto-root .eduto-footer { grid-template-columns: 1fr; }
+      .eduto-root .eduto-footer__cell { border-right: 0; border-bottom: 1px solid rgba(255,255,255,0.16); }
+      .eduto-root .eduto-footer__cell:last-child { border-bottom: 0; }
+      .eduto-root .eduto-stat { padding: var(--eduto-space-3) var(--eduto-space-4); }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ============================================================ -->
+  <!-- Everything course-related lives inside .eduto-root            -->
+  <!-- ============================================================ -->
+  <div class="eduto-root">
+    <main class="eduto-page">
+
+      <!-- ---- Masthead ---------------------------------------- -->
+      <header class="eduto-masthead">
+        <div class="eduto-logo">EDUTO<span>.</span>INSTITUTE</div>
+        <div class="eduto-masthead__meta">COURSE&nbsp;LIBRARY&nbsp;/&nbsp;BROWSE&nbsp;/&nbsp;EST.&nbsp;2021</div>
+      </header>
+
+      <!-- ---- Hero banner ------------------------------------- -->
+      <section class="eduto-hero" aria-labelledby="eduto-hero-title">
+        <div class="eduto-eyebrow eduto-hero__eyebrow">Professional Upskilling Programs</div>
+        <h1 class="eduto-display eduto-hero__title" id="eduto-hero-title">
+          <em>Learn Real-World Skills.</em>
+          <em>Online.</em>
+          <em class="w-accent">Professional.</em>
+        </h1>
+        <p class="eduto-hero__sub">
+          Join <b>5,000+ learners</b> at Eduto Institute. Mentor-led courses,
+          project-driven curriculum, lifetime access.
+        </p>
+
+        <div class="eduto-hero__stats" role="list">
+          <div class="eduto-stat" role="listitem">
+            <div class="eduto-stat__num">12</div>
+            <div class="eduto-stat__label">Live Courses</div>
+          </div>
+          <div class="eduto-stat" role="listitem">
+            <div class="eduto-stat__num">5,000+</div>
+            <div class="eduto-stat__label">Learners</div>
+          </div>
+          <div class="eduto-stat" role="listitem">
+            <div class="eduto-stat__num">4.7</div>
+            <div class="eduto-stat__label">Avg. Rating</div>
+          </div>
+        </div>
+
+        <div class="eduto-hero__mark" aria-hidden="true">01</div>
+      </section>
+
+      <!-- ---- Category tabs ----------------------------------- -->
+      <nav class="eduto-tabs" id="eduto-tabs" aria-label="Course categories">
+        <!-- buttons injected by JS so counts stay in sync -->
+      </nav>
+
+      <!-- ---- Featured section -------------------------------- -->
+      <section class="eduto-section" aria-labelledby="eduto-featured-title">
+        <div class="eduto-section-head">
+          <div>
+            <div class="eduto-eyebrow">Hand-picked this week</div>
+            <h2 class="eduto-heading" id="eduto-featured-title">Featured Programs</h2>
+          </div>
+          <div class="eduto-section-head__count">03&nbsp;/&nbsp;HIGHLIGHTS</div>
+        </div>
+        <div class="eduto-grid eduto-grid--3 eduto-stagger" id="eduto-featured-grid">
+          <!-- featured cards injected by JS -->
+        </div>
+      </section>
+
+      <!-- ---- Full course library ----------------------------- -->
+      <section class="eduto-section" aria-labelledby="eduto-library-title">
+        <div class="eduto-section-head">
+          <div>
+            <div class="eduto-eyebrow">The complete catalogue</div>
+            <h2 class="eduto-heading" id="eduto-library-title">Course Library</h2>
+          </div>
+          <div class="eduto-section-head__count" id="eduto-result-count">12&nbsp;/&nbsp;12&nbsp;COURSES</div>
+        </div>
+
+        <!-- Toolbar: search -->
+        <div class="eduto-toolbar">
+          <div class="eduto-search">
+            <span class="eduto-search__icon" aria-hidden="true">⌕</span>
+            <input
+              type="search"
+              id="eduto-search-input"
+              class="eduto-input"
+              placeholder="Search courses by title…"
+              aria-label="Search courses by title"
+              autocomplete="off"
+            />
+          </div>
+          <div class="eduto-text-mono eduto-muted" id="eduto-active-filter">FILTER: ALL</div>
+        </div>
+
+        <!-- Course grid -->
+        <div class="eduto-grid eduto-grid--4" id="eduto-course-grid">
+          <!-- course cards injected by JS -->
+          <div class="eduto-empty" id="eduto-empty" hidden>
+            <span class="eduto-empty__icon" aria-hidden="true">∅</span>
+            <div class="eduto-subheading">No courses match your filters</div>
+            <p class="eduto-muted">Try a different category or clear the search.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---- Footer ------------------------------------------ -->
+      <footer class="eduto-footer">
+        <div class="eduto-footer__cell">
+          <div class="eduto-footer__brand">EDUTO<span>.</span>INSTITUTE</div>
+          <p class="eduto-footer__note">
+            Real-world, mentor-led technology courses.<br />
+            Operated by Codemo Teams.
+          </p>
+        </div>
+        <div class="eduto-footer__cell">
+          <div class="eduto-footer__label">Feedback &amp; Support</div>
+          <a href="mailto:feedback@codemoteams.org">feedback@codemoteams.org</a>
+        </div>
+        <div class="eduto-footer__cell">
+          <div class="eduto-footer__label">WhatsApp Helpline</div>
+          <a href="https://wa.me/91XXXXXXXXXX">+91-XXXXXXXXXX</a>
+        </div>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- INLINE JS — vanilla, no dependencies                          -->
+  <!-- ============================================================ -->
+  <script>
+  (function () {
+    'use strict';
+
+    /* ---- Course data ------------------------------------------- */
+    const COURSES = [
+      { id: 'py-pro',       title: 'Python Professional',     category: 'Backend',      duration: '8 weeks',  original: 8000, price: 5000, rating: 4.9, mentor: 'Rahul Sharma',   feature: 'flash'    },
+      { id: 'rust-sys',     title: 'Rust Systems Programming', category: 'Backend',     duration: '10 weeks', original: null, price: 7500, rating: 4.9, mentor: 'Priya Patel',    feature: 'new'      },
+      { id: 'docker-k8s',   title: 'Docker & Kubernetes',     category: 'DevOps',       duration: '6 weeks',  original: null, price: 8000, rating: 4.7, mentor: 'Amit Gupta'                          },
+      { id: 'web-dev-pro',  title: 'Web Development Pro',      category: 'Frontend',     duration: '8 weeks',  original: null, price: 5000, rating: 4.8, mentor: 'Sneha Reddy'                         },
+      { id: 'react-pro',    title: 'React Professional',      category: 'Frontend',     duration: '6 weeks',  original: null, price: 6000, rating: 4.8, mentor: 'Vikram Singh',   feature: 'trending' },
+      { id: 'uiux',         title: 'UI/UX Design',            category: 'Design',       duration: '4 weeks',  original: null, price: 4500, rating: 4.6, mentor: 'Ananya Iyer'                         },
+      { id: 'flutter',      title: 'Flutter Mobile Dev',      category: 'Mobile',       duration: '8 weeks',  original: null, price: 7000, rating: 4.5, mentor: 'Karan Joshi'                         },
+      { id: 'ds-python',    title: 'Data Science with Python', category: 'Data Science', duration: '8 weeks', original: null, price: 9000, rating: 4.7, mentor: 'Dr. Meera Nair'                      },
+      { id: 'node-backend', title: 'Node.js Backend',         category: 'Backend',      duration: '6 weeks',  original: null, price: 6500, rating: 4.6, mentor: 'Arjun Mehta'                         },
+      { id: 'ts-mastery',   title: 'TypeScript Mastery',      category: 'Frontend',     duration: '4 weeks',  original: null, price: 4000, rating: 4.8, mentor: 'Sneha Reddy'                         },
+      { id: 'aws-cloud',    title: 'AWS Cloud Practitioner',  category: 'DevOps',       duration: '6 weeks',  original: null, price: 7500, rating: 4.5, mentor: 'Amit Gupta'                          },
+      { id: 'figma-dev',    title: 'Figma for Developers',    category: 'Design',       duration: '3 weeks',  original: null, price: 3500, rating: 4.7, mentor: 'Ananya Iyer'                         }
+    ];
+
+    const CATEGORIES = ['All', 'Frontend', 'Backend', 'DevOps', 'Design', 'Data Science'];
+
+    /* ---- Helpers ----------------------------------------------- */
+    const $  = (sel, root) => (root || document).querySelector(sel);
+    const fmt = (n) => '₹' + n.toLocaleString('en-IN');
+
+    /* Build a 5-star rating block. Uses a clipped overlay so a 4.9
+       reads as nearly-full rather than a misleading round-up. */
+    function starsHTML(rating) {
+      const pct = (rating / 5) * 100;
+      return (
+        '<span class="eduto-stars">' +
+          '<span class="eduto-stars__glyphs" aria-hidden="true">★★★★★' +
+            '<span class="eduto-stars__fill" style="width:' + pct + '%">★★★★★</span>' +
+          '</span>' +
+          '<span class="eduto-stars__num">' + rating.toFixed(1) + '</span>' +
+        '</span>'
+      );
+    }
+
+    /* Pricing block — strikethrough original only when discounted. */
+    function priceHTML(course) {
+      if (course.original && course.original > course.price) {
+        const save = Math.round((1 - course.price / course.original) * 100);
+        return (
+          '<div class="eduto-price">' +
+            '<s class="eduto-price__original">' + fmt(course.original) + '</s>' +
+            '<span class="eduto-price__final">' + fmt(course.price) + '</span>' +
+            '<span class="eduto-price__save">−' + save + '%</span>' +
+          '</div>'
+        );
+      }
+      return '<div class="eduto-price"><span class="eduto-price__final">' + fmt(course.price) + '</span></div>';
+    }
+
+    /* ---- Render: category tabs --------------------------------- */
+    function renderTabs() {
+      const nav = $('#eduto-tabs');
+      nav.innerHTML = CATEGORIES.map(function (cat) {
+        const count = cat === 'All'
+          ? COURSES.length
+          : COURSES.filter(function (c) { return c.category === cat; }).length;
+        const active = cat === 'All' ? ' eduto-tab--active' : '';
+        return (
+          '<button type="button" class="eduto-tab' + active + '" ' +
+            'data-category="' + cat + '" ' +
+            'aria-pressed="' + (cat === 'All') + '">' +
+            cat +
+            '<span class="eduto-tab__count">' + String(count).padStart(2, '0') + '</span>' +
+          '</button>'
+        );
+      }).join('');
+    }
+
+    /* ---- Render: featured cards -------------------------------- */
+    const FEATURE_META = {
+      flash:    { icon: '⚡', label: 'Flash Sale', badge: 'eduto-badge--danger'  },
+      trending: { icon: '🔥', label: 'Trending', badge: 'eduto-badge--warning' },
+      new:      { icon: '🆕', label: 'New', badge: 'eduto-badge--success'  }
+    };
+
+    function renderFeatured() {
+      const order = ['flash', 'trending', 'new'];
+      const grid = $('#eduto-featured-grid');
+      grid.innerHTML = order.map(function (key) {
+        const course = COURSES.find(function (c) { return c.feature === key; });
+        const meta = FEATURE_META[key];
+        return (
+          '<article class="eduto-card eduto-card--interactive eduto-featured-card">' +
+            '<div class="eduto-featured-card__icon" aria-hidden="true">' + meta.icon + '</div>' +
+            '<span class="eduto-badge ' + meta.badge + '">' + meta.label + '</span>' +
+            '<hr class="eduto-card__divider" />' +
+            '<h3 class="eduto-subheading">' + course.title + '</h3>' +
+            '<p class="eduto-muted eduto-text-mono" style="margin-top:6px">' +
+              course.duration.toUpperCase() + ' · ' + course.category.toUpperCase() +
+            '</p>' +
+            '<div style="margin-top:12px">' + starsHTML(course.rating) + '</div>' +
+            '<div style="margin-top:16px">' + priceHTML(course) + '</div>' +
+            '<button type="button" class="eduto-btn-primary eduto-btn-primary--block" ' +
+              'data-course-id="' + course.id + '" style="margin-top:20px">' +
+              'Enroll Now →' +
+            '</button>' +
+          '</article>'
+        );
+      }).join('');
+    }
+
+    /* ---- Render: course library grid --------------------------- */
+    function courseCardHTML(course, index) {
+      return (
+        '<article class="eduto-card eduto-course-card eduto-card--interactive eduto-fade-in" ' +
+          'data-category="' + course.category + '" ' +
+          'data-title="' + course.title.toLowerCase() + '" ' +
+          'style="animation-delay:' + Math.min(index * 0.04, 0.4) + 's">' +
+
+          '<div class="eduto-course-card__top">' +
+            '<span class="eduto-badge">' + course.category + '</span>' +
+            '<span class="eduto-course-card__dur">' + course.duration + '</span>' +
+          '</div>' +
+
+          '<div class="eduto-course-card__body">' +
+            '<h3 class="eduto-course-card__title">' + course.title + '</h3>' +
+            starsHTML(course.rating) +
+            '<p class="eduto-course-card__mentor">Mentor &middot; <b>' + course.mentor + '</b></p>' +
+          '</div>' +
+
+          '<div class="eduto-course-card__foot">' +
+            priceHTML(course) +
+            '<button type="button" class="eduto-btn-secondary eduto-btn-secondary--sm" ' +
+              'data-course-id="' + course.id + '">Enroll</button>' +
+          '</div>' +
+        '</article>'
+      );
+    }
+
+    function renderCourses() {
+      const grid = $('#eduto-course-grid');
+      const empty = $('#eduto-empty');
+      const cards = COURSES.map(courseCardHTML).join('');
+      // keep the empty-state node, prepend the cards before it
+      grid.insertAdjacentHTML('afterbegin', cards);
+    }
+
+    /* ---- Filtering --------------------------------------------- */
+    let activeCategory = 'All';
+    let searchTerm = '';
+
+    function applyFilters() {
+      const cards = document.querySelectorAll('#eduto-course-grid .eduto-course-card');
+      let visible = 0;
+
+      cards.forEach(function (card) {
+        const matchCat = activeCategory === 'All' ||
+                         card.getAttribute('data-category') === activeCategory;
+        const matchSearch = !searchTerm ||
+                            card.getAttribute('data-title').indexOf(searchTerm) !== -1;
+        const show = matchCat && matchSearch;
+        card.hidden = !show;
+        if (show) visible++;
+      });
+
+      $('#eduto-empty').hidden = visible !== 0;
+      $('#eduto-result-count').innerHTML =
+        String(visible).padStart(2, '0') + ' / ' +
+        String(COURSES.length).padStart(2, '0') + ' COURSES';
+      $('#eduto-active-filter').textContent = 'FILTER: ' + activeCategory.toUpperCase();
+    }
+
+    /* ---- Events ------------------------------------------------ */
+    function wireEvents() {
+      // Category tabs
+      $('#eduto-tabs').addEventListener('click', function (e) {
+        const tab = e.target.closest('.eduto-tab');
+        if (!tab) return;
+        document.querySelectorAll('.eduto-tab').forEach(function (t) {
+          t.classList.remove('eduto-tab--active');
+          t.setAttribute('aria-pressed', 'false');
+        });
+        tab.classList.add('eduto-tab--active');
+        tab.setAttribute('aria-pressed', 'true');
+        activeCategory = tab.getAttribute('data-category');
+        applyFilters();
+      });
+
+      // Search
+      $('#eduto-search-input').addEventListener('input', function (e) {
+        searchTerm = e.target.value.trim().toLowerCase();
+        applyFilters();
+      });
+
+      // Enroll buttons — intentionally inert for now (wired up next).
+      document.querySelector('.eduto-page').addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-course-id]');
+        if (!btn) return;
+        const id = btn.getAttribute('data-course-id');
+        console.log('[eduto] enroll requested for course:', id);
+        // No navigation yet — checkout flow is the next build step.
+      });
+    }
+
+    /* ---- Init -------------------------------------------------- */
+    renderTabs();
+    renderFeatured();
+    renderCourses();
+    wireEvents();
+    applyFilters();
+  })();
+  </script>
+</body>
+</html>

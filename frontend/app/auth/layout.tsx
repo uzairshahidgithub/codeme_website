@@ -11,7 +11,7 @@ import { CodemoLogo } from '@/components/ui/CodemoLogo'
    typography) and gets cut in half if it has to live inside
    .auth-col-right's 420px max-width constraint — that's why
    the page was reading as visually empty. */
-const FULL_BLEED_AUTH_ROUTES = new Set<string>(['/auth/onboarding'])
+const FULL_BLEED_AUTH_ROUTES = new Set<string>(['/auth/onboarding', '/auth/signup/success'])
 
 /**
  * AuthDesktopLogo — uses correctly-cropped SVGs.

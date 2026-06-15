@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eduto Enrollment - Huashu Design</title>
+    <!-- jsPDF CDN for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script>
+        // STEP 2 – THEME DETECTION & VARIABLE MAPPING
+        (function() {
+            function updateEdutoTheme() {
+                const rootStyle = getComputedStyle(document.body);
+                
+                // Read computed styles from document.body
+                const primaryColor = rootStyle.getPropertyValue('--blue').trim() || '#00b4d8';
+                const bgColor = rootStyle.getPropertyValue('--bg').trim() || '#0f172a';
+                const surfaceColor = rootStyle.getPropertyValue('--card-glass').trim() || '#1e293b';
+                const textPrimary = rootStyle.getPropertyValue('--text1').trim() || '#f8fafc';
+                const textMuted = rootStyle.getPropertyValue('--text3').trim() || '#94a3b8';
+                const borderColor = rootStyle.getPropertyValue('--border').trim() || '#334155';
+                const fontFamily = rootStyle.getPropertyValue('--font-poppins').trim() || "'Inter', sans-serif";
+
+                let styleEl = document.getElementById('eduto-theme-styles');
+                if (!styleEl) {
+                    styleEl = document.createElement('style');
+                    styleEl.id = 'eduto-theme-styles';
+                    document.head.appendChild(styleEl);
+                }
+
+                styleEl.textContent = `
+                    #eduto-root {
+                        --eduto-primary: ${primaryColor};
+                        --eduto-bg: ${bgColor};
+                        --eduto-surface: ${surfaceColor};
+                        --eduto-text: ${textPrimary};
+                        --eduto-text-muted: ${textMuted};
+                        --eduto-border: ${borderColor};
+                        --eduto-font: ${fontFamily};
+                        --eduto-radius: 0px;
+                        background-color: var(--eduto-bg);
+                        color: var(--eduto-text);
+                        font-family: var(--eduto-font);
+                        min-height: 100vh;
+                        padding: 24px;
+                        position: relative;
+                    }
+                    /* Base reset inside #eduto-root */
+                    #eduto-root * {
+                        box-sizing: border-box;
+                    }
+                    body.dark #eduto-root, html.dark #eduto-root, [data-theme="dark"] #eduto-root {
+                        /* In case variables don't update dynamically automatically, we can override here if needed */
+                        /* But since we observe class mutations and call updateEdutoTheme, the vars above will update */
+                    }
+                `;
+            }
+
+            // Expose globally
+            window.updateEdutoTheme = updateEdutoTheme;
+
+            document.addEventListener("DOMContentLoaded", () => {
+                updateEdutoTheme();
+
+                // Dark mode synchronization
+                function syncDarkMode() {
+                    const htmlDark = document.documentElement.classList.contains('dark') || document.documentElement.getAttribute('data-theme') === 'dark';
+                    const bodyDark = document.body.classList.contains('dark') || document.body.getAttribute('data-theme') === 'dark';
+                    const edutoRoot = document.getElementById('eduto-root');
+                    if (edutoRoot) {
+                        if (htmlDark || bodyDark) {
+                            edutoRoot.setAttribute('data-theme', 'dark');
+                            edutoRoot.classList.add('hu-dark');
+                        } else {
+                            edutoRoot.removeAttribute('data-theme');
+                            edutoRoot.classList.remove('hu-dark');
+                        }
+                    }
+                    updateEdutoTheme(); // Re-read variables on theme toggle
+                }
+
+                syncDarkMode();
+
+                const observer = new MutationObserver(() => {
+                    syncDarkMode();
+                });
+
+                observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+                observer.observe(document.body, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+
+                if (window.matchMedia) {
+                    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncDarkMode);
+                }
+            });
+        })();
+    </script>
+
+    <script>
+        // STEP 1 – HUASHU‑DESIGN COMPONENT LIBRARY
+        
+        class HuComponent extends HTMLElement {
+            constructor() {
+                super();
+                this.attachShadow({ mode: 'open' });
+            }
+            
+            getStyles() {
+                return `
+                    :host {
+                        display: block;
+                        --primary: var(--eduto-primary);
+                        --bg: var(--eduto-bg);
+                        --surface: var(--eduto-surface);
+                        --text: var(--eduto-text);
+                        --text-muted: var(--eduto-text-muted);
+                        --border: var(--eduto-border);
+                        --radius: var(--eduto-radius);
+                        --font: var(--eduto-font);
+                        font-family: var(--font);
+                    }
+                    * { box-sizing: border-box; }
+                `;
+            }
+            
+            render(template) {
+                this.shadowRoot.innerHTML = `<style>${this.getStyles()}</style>${template}`;
+            }
+        }
+
+        // <hu-card>
+        class HuCard extends HuComponent {
+            connectedCallback() {
+                const featured = this.hasAttribute('featured');
+                this.render(`
+                    <style>
+                        .card {
+                            background: var(--surface);
+                            border: ${featured ? '3px' : '1px'} solid ${featured ? 'var(--primary)' : 'var(--border)'};
+                            border-radius: var(--radius);
+                            padding: 24px;
+                            box-shadow: ${featured ? '6px 6px 0 var(--primary)' : '4px 4px 0 var(--border)'};
+                            transition: transform 0.2s, box-shadow 0.2s;
+                            display: flex;
+                            flex-direction: column;
+                            gap: 12px;
+                            height: 100%;
+                            position: relative;
+                        }
+                        .card:hover {
+                            transform: translate(-2px, -2px);
+                            box-shadow: ${featured ? '8px 8px 0 var(--primary)' : '6px 6px 0 var(--border)'};
+                        }
+                    </style>
+                    <div class="card">
+                        <slot></slot>
+                    </div>
+                `);
+            }
+        }
+        customElements.define('hu-card', HuCard);
+
+        // <hu-button>
+        class HuButton extends HuComponent {
+            connectedCallback() {
+                const variant = this.getAttribute('variant') || 'outline';
+                const courseId = this.getAttribute('data-course-id') || '';
+                
+                this.render(`
+                    <style>
+                        button {
+                            font-family: var(--font);
+                            text-transform: uppercase;
+                            font-weight: 700;
+                            letter-spacing: 1px;
+                            padding: 12px 24px;
+                            border-radius: var(--radius);
+                            cursor: pointer;
+                            transition: all 0.15s ease-out;
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 8px;
+                            width: 100%;
+                            position: relative;
+                        }
+                        
+                        /* Variants */
+                        .primary {
+                            background: var(--primary);
+                            color: var(--bg);
+                            border: 2px solid var(--primary);
+                            box-shadow: 4px 4px 0 var(--border);
+                        }
+                        .primary:hover {
+                            transform: translate(-2px, -2px);
+                            box-shadow: 6px 6px 0 var(--border);
+                        }
+                        .primary:active {
+                            transform: translate(2px, 2px);
+                            box-shadow: 0 0 0 var(--border);
+                        }
+                        
+                        .outline {
+                            background: transparent;
+                            color: var(--text);
+                            border: 2px solid var(--border);
+                            box-shadow: 4px 4px 0 var(--border);
+                        }
+                        .outline:hover {
+                            transform: translate(-2px, -2px);
+                            box-shadow: 6px 6px 0 var(--text);
+                            border-color: var(--text);
+                        }
+                        .outline:active {
+                            transform: translate(2px, 2px);
+                            box-shadow: 0 0 0 var(--text);
+                        }
+                        
+                        .ghost {
+                            background: transparent;
+                            color: var(--text);
+                            border: 2px solid transparent;
+                            box-shadow: none;
+                        }
+                        .ghost:hover {
+                            border-color: var(--border);
+                            box-shadow: 2px 2px 0 var(--border);
+                        }
+                        .ghost:active {
+                            background: var(--surface);
+                        }
+                    </style>
+                    <button class="${variant}" data-course-id="${courseId}">
+                        <slot></slot>
+                    </button>
+                `);
+            }
+        }
+        customElements.define('hu-button', HuButton);
+
+        // <hu-grid>
+        class HuGrid extends HuComponent {
+            connectedCallback() {
+                const cols = this.getAttribute('columns') || '3';
+                const gapMap = { sm: '12px', md: '24px', lg: '32px' };
+                const gap = gapMap[this.getAttribute('gap') || 'md'];
+                
+                this.render(`
+                    <style>
+                        .grid {
+                            display: grid;
+                            gap: ${gap};
+                            grid-template-columns: repeat(${cols}, 1fr);
+                        }
+                        @media (max-width: 1024px) {
+                            .grid {
+                                grid-template-columns: repeat(min(${cols}, 2), 1fr);
+                            }
+                        }
+                        @media (max-width: 768px) {
+                            .grid {
+                                grid-template-columns: 1fr;
+                            }
+                        }
+                    </style>
+                    <div class="grid">
+                        <slot></slot>
+                    </div>
+                `);
+            }
+        }
+        customElements.define('hu-grid', HuGrid);
+
+        // <hu-tabs>
+        class HuTabs extends HuComponent {
+            connectedCallback() {
+                this.render(`
+                    <style>
+                        .tabs {
+                            display: flex;
+                            gap: 16px;
+                            border-bottom: 2px solid var(--border);
+                            overflow-x: auto;
+                        }
+                        /* Hide scrollbar for tabs */
+                        .tabs::-webkit-scrollbar { display: none; }
+                        .tabs { -ms-overflow-style: none; scrollbar-width: none; }
+                    </style>
+                    <div class="tabs" role="tablist">
+                        <slot></slot>
+                    </div>
+                `);
+                
+                const slot = this.shadowRoot.querySelector('slot');
+                slot.addEventListener('slotchange', () => {
+                    this.tabs = slot.assignedElements().filter(el => el.tagName.toLowerCase() === 'HU-TAB');
+                    this.tabs.forEach(tab => {
+                        tab.addEventListener('click', () => {
+                            this.setActiveTab(tab);
+                        });
+                    });
+                });
+                
+                this.addEventListener('keydown', (e) => {
+                    if (!this.tabs || this.tabs.length === 0) return;
+                    const currentIndex = this.tabs.findIndex(t => t.hasAttribute('active'));
+                    let newIndex = currentIndex;
+                    if (e.key === 'ArrowRight') {
+                        newIndex = (currentIndex + 1) % this.tabs.length;
+                    } else if (e.key === 'ArrowLeft') {
+                        newIndex = (currentIndex - 1 + this.tabs.length) % this.tabs.length;
+                    }
+                    if (newIndex !== currentIndex) {
+                        this.setActiveTab(this.tabs[newIndex]);
+                        this.tabs[newIndex].shadowRoot.querySelector('.tab').focus();
+                    }
+                });
+            }
+            
+            setActiveTab(activeTab) {
+                this.tabs.forEach(tab => {
+                    if (tab === activeTab) {
+                        tab.setAttribute('active', '');
+                    } else {
+                        tab.removeAttribute('active');
+                    }
+                });
+                this.dispatchEvent(new CustomEvent('change', { detail: { value: activeTab.getAttribute('value') } }));
+            }
+        }
+        customElements.define('hu-tabs', HuTabs);
+
+        // <hu-tab>
+        class HuTab extends HuComponent {
+            static get observedAttributes() { return ['active']; }
+            
+            attributeChangedCallback() {
+                this.updateStyle();
+            }
+            
+            connectedCallback() {
+                this.updateStyle();
+            }
+            
+            updateStyle() {
+                const isActive = this.hasAttribute('active');
+                this.render(`
+                    <style>
+                        :host {
+                            outline: none;
+                            flex-shrink: 0;
+                        }
+                        .tab {
+                            padding: 12px 16px;
+                            font-weight: ${isActive ? 'bold' : 'normal'};
+                            color: ${isActive ? 'var(--text)' : 'var(--text-muted)'};
+                            border-bottom: 4px solid ${isActive ? 'var(--primary)' : 'transparent'};
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            white-space: nowrap;
+                            outline: none;
+                        }
+                        .tab:hover {
+                            color: var(--text);
+                            background: var(--surface);
+                        }
+                        .tab:focus-visible {
+                            background: var(--surface);
+                            outline: 2px solid var(--primary);
+                        }
+                    </style>
+                    <div class="tab" tabindex="0" role="tab">
+                        <slot></slot>
+                    </div>
+                `);
+            }
+        }
+        customElements.define('hu-tab', HuTab);
+
+        // <hu-badge>
+        class HuBadge extends HuComponent {
+            connectedCallback() {
+                const variant = this.getAttribute('variant') || 'filled';
+                const colorAttr = this.getAttribute('color') || 'blue';
+                
+                const colorMap = {
+                    red: '#ef4444',
+                    green: '#22c55e',
+                    orange: '#f97316',
+                    blue: '#3b82f6'
+                };
+                const actualColor = colorMap[colorAttr] || colorAttr;
+                
+                this.render(`
+                    <style>
+                        :host {
+                            display: inline-block;
+                            width: max-content;
+                        }
+                        .badge {
+                            font-size: 0.75rem;
+                            font-weight: 700;
+                            text-transform: uppercase;
+                            padding: 4px 8px;
+                            border: 1px solid ${actualColor};
+                            border-radius: var(--radius);
+                            background: ${variant === 'filled' ? actualColor : 'transparent'};
+                            color: ${variant === 'filled' ? '#fff' : actualColor};
+                            box-shadow: 2px 2px 0 ${actualColor};
+                        }
+                    </style>
+                    <div class="badge">
+                        <slot></slot>
+                    </div>
+                `);
+            }
+        }
+        customElements.define('hu-badge', HuBadge);
+
+        // <hu-text>
+        class HuText extends HuComponent {
+            connectedCallback() {
+                const variant = this.getAttribute('variant') || 'body';
+                const weight = this.getAttribute('weight') || 'normal';
+                const color = this.getAttribute('color') || 'default';
+                const size = this.getAttribute('size') || 'md';
+                const strikethrough = this.hasAttribute('strikethrough');
+                const align = this.getAttribute('align') || 'left';
+                const marginTop = this.getAttribute('margin-top') || 'none';
+                
+                const sizeMap = { sm: '0.875rem', md: '1rem', lg: '1.25rem', xl: '1.5rem' };
+                let tag = 'p';
+                let fontSize = sizeMap[size];
+                let margin = '0 0 0.5rem 0';
+                
+                if (variant === 'h1') { tag = 'h1'; fontSize = '3rem'; margin = '0 0 1rem 0'; }
+                if (variant === 'h2') { tag = 'h2'; fontSize = '2rem'; margin = '0 0 1rem 0'; }
+                if (variant === 'h3') { tag = 'h3'; fontSize = '1.5rem'; margin = '0 0 0.75rem 0'; }
+                if (variant === 'subtitle') { tag = 'p'; fontSize = '1.25rem'; }
+                
+                let textColor = 'var(--text)';
+                if (color === 'muted') textColor = 'var(--text-muted)';
+                if (color === 'primary') textColor = 'var(--primary)';
+                if (color === 'orange') textColor = '#f97316';
+                
+                const fontWeight = weight === 'bold' ? '700' : '400';
+                const textDecoration = strikethrough ? 'line-through' : 'none';
+                
+                const customMarginBottom = this.getAttribute('margin-bottom');
+                let mb = '0.5rem';
+                if (variant === 'h1' || variant === 'h2') mb = '1rem';
+                if (variant === 'h3') mb = '0.75rem';
+
+                if (customMarginBottom) {
+                    const mbMap = { sm: '0.5rem', md: '1rem', lg: '2rem', xl: '3rem' };
+                    mb = mbMap[customMarginBottom] || mb;
+                }
+
+                let mt = '0';
+                if (marginTop !== 'none') {
+                    const mtMap = { sm: '0.5rem', md: '1rem', lg: '2rem', xl: '3rem' };
+                    mt = mtMap[marginTop] || '0';
+                }
+
+                this.render(`
+                    <style>
+                        .text {
+                            font-size: ${fontSize};
+                            font-weight: ${fontWeight};
+                            color: ${textColor};
+                            text-decoration: ${textDecoration};
+                            margin: ${mt} 0 ${mb} 0;
+                            text-align: ${align};
+                            line-height: 1.4;
+                            letter-spacing: ${variant.startsWith('h') ? '-0.02em' : 'normal'};
+                        }
+                    </style>
+                    <${tag} class="text">
+                        <slot></slot>
+                    </${tag}>
+                `);
+            }
+        }
+        customElements.define('hu-text', HuText);
+
+        // <hu-input>
+        class HuInput extends HuComponent {
+            static get observedAttributes() { return ['error']; }
+            
+            attributeChangedCallback() {
+                this.updateStyle();
+            }
+
+            connectedCallback() {
+                this.updateStyle();
+            }
+
+            updateStyle() {
+                const label = this.getAttribute('label') || '';
+                const type = this.getAttribute('type') || 'text';
+                const placeholder = this.getAttribute('placeholder') || '';
+                const id = this.getAttribute('id') || 'input-' + Math.random().toString(36).substr(2, 9);
+                const hasError = this.hasAttribute('error');
+                const borderColor = hasError ? '#ef4444' : 'var(--border)';
+                // Maintain current value if any
+                const currentValue = this.shadowRoot ? this.value : '';
+
+                this.render(`
+                    <style>
+                        .wrapper {
+                            display: flex;
+                            flex-direction: column;
+                            gap: 8px;
+                            margin-bottom: 16px;
+                        }
+                        label {
+                            font-weight: 700;
+                            font-size: 0.875rem;
+                            color: var(--text);
+                            text-transform: uppercase;
+                            letter-spacing: 0.5px;
+                        }
+                        input {
+                            padding: 14px 16px;
+                            border: 2px solid ${borderColor};
+                            background: var(--surface);
+                            color: var(--text);
+                            font-family: var(--font);
+                            font-size: 1rem;
+                            outline: none;
+                            border-radius: var(--radius);
+                            box-shadow: 4px 4px 0 ${borderColor};
+                            transition: all 0.2s;
+                        }
+                        input:focus {
+                            border-color: var(--primary);
+                            box-shadow: 6px 6px 0 var(--primary);
+                            transform: translate(-2px, -2px);
+                        }
+                        .error-msg {
+                            color: #ef4444;
+                            font-size: 0.75rem;
+                            display: ${hasError ? 'block' : 'none'};
+                            font-weight: bold;
+                            margin-top: 4px;
+                        }
+                    </style>
+                    <div class="wrapper">
+                        ${label ? `<label for="${id}">${label}</label>` : ''}
+                        <input id="${id}" type="${type}" placeholder="${placeholder}" value="${currentValue}">
+                        <div class="error-msg"><slot name="error"></slot></div>
+                    </div>
+                `);
+
+                const inputEl = this.shadowRoot.querySelector('input');
+                inputEl.addEventListener('input', (e) => {
+                    this._val = e.target.value;
+                });
+            }
+
+            get value() {
+                return this.shadowRoot.querySelector('input') ? this.shadowRoot.querySelector('input').value : (this._val || '');
+            }
+        }
+        customElements.define('hu-input', HuInput);
+
+        // <hu-empty>
+        class HuEmpty extends HuComponent {
+            connectedCallback() {
+                this.render(`
+                    <style>
+                        .empty {
+                            padding: 64px 24px;
+                            border: 2px dashed var(--border);
+                            text-align: center;
+                            background: var(--surface);
+                            color: var(--text-muted);
+                            font-weight: bold;
+                            font-size: 1.125rem;
+                        }
+                    </style>
+                    <div class="empty">
+                        <slot></slot>
+                    </div>
+                `);
+            }
+        }
+        customElements.define('hu-empty', HuEmpty);
+
+        // <hu-box>
+        class HuBox extends HuComponent {
+            connectedCallback() {
+                const padMap = { sm: '16px', md: '24px', lg: '32px', xl: '48px' };
+                const marginMap = { sm: '16px', md: '24px', lg: '32px', xl: '48px' };
+                
+                const padding = padMap[this.getAttribute('padding')] || '0';
+                const mb = marginMap[this.getAttribute('margin-bottom')] || '0';
+                const mt = marginMap[this.getAttribute('margin-top')] || '0';
+                
+                const bb = this.getAttribute('border-bottom');
+                const bt = this.getAttribute('border-top');
+                
+                let borderBottom = 'none';
+                if (bb === 'heavy') borderBottom = '4px solid var(--border)';
+                if (bb === 'solid') borderBottom = '2px solid var(--border)';
+
+                let borderTop = 'none';
+                if (bt === 'heavy') borderTop = '4px solid var(--border)';
+                if (bt === 'solid') borderTop = '2px solid var(--border)';
+
+                this.render(`
+                    <style>
+                        :host {
+                            display: block;
+                        }
+                        .box {
+                            padding: ${padding};
+                            margin-bottom: ${mb};
+                            margin-top: ${mt};
+                            border-bottom: ${borderBottom};
+                            border-top: ${borderTop};
+                            background: ${this.hasAttribute('surface') ? 'var(--surface)' : 'transparent'};
+                        }
+                    </style>
+                    <div class="box">
+                        <slot></slot>
+                    </div>
+                `);
+            }
+        }
+        customElements.define('hu-box', HuBox);
+
+        // <hu-progress>
+        class HuProgress extends HuComponent {
+            static get observedAttributes() { return ['current-step']; }
+            
+            attributeChangedCallback() {
+                this.updateStyle();
+            }
+
+            connectedCallback() {
+                this.updateStyle();
+            }
+
+            updateStyle() {
+                const step = parseInt(this.getAttribute('current-step') || '1', 10);
+                this.render(`
+                    <style>
+                        .progress {
+                            display: flex;
+                            align-items: center;
+                            justify-content: space-between;
+                            margin-bottom: 32px;
+                            position: relative;
+                            padding: 0 16px;
+                        }
+                        .progress::before {
+                            content: '';
+                            position: absolute;
+                            top: 50%;
+                            left: 16px;
+                            right: 16px;
+                            height: 4px;
+                            background: var(--border);
+                            z-index: 0;
+                            transform: translateY(-50%);
+                        }
+                        .step {
+                            position: relative;
+                            z-index: 1;
+                            width: 40px;
+                            height: 40px;
+                            border-radius: 50%;
+                            background: var(--surface);
+                            border: 4px solid var(--border);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-weight: 900;
+                            color: var(--text-muted);
+                            transition: all 0.3s;
+                        }
+                        .step.active {
+                            border-color: var(--primary);
+                            background: var(--primary);
+                            color: var(--bg);
+                            box-shadow: 0 0 0 4px var(--bg), 0 0 0 6px var(--primary);
+                            transform: scale(1.1);
+                        }
+                        .step.done {
+                            border-color: var(--primary);
+                            color: var(--primary);
+                        }
+                    </style>
+                    <div class="progress">
+                        <div class="step ${step >= 1 ? (step === 1 ? 'active' : 'done') : ''}">1</div>
+                        <div class="step ${step >= 2 ? (step === 2 ? 'active' : 'done') : ''}">2</div>
+                        <div class="step ${step >= 3 ? (step === 3 ? 'active' : 'done') : ''}">3</div>
+                    </div>
+                `);
+            }
+        }
+        customElements.define('hu-progress', HuProgress);
+
+        // <hu-drawer>
+        class HuDrawer extends HuComponent {
+            static get observedAttributes() { return ['open']; }
+
+            attributeChangedCallback() {
+                this.updateStyle();
+            }
+
+            connectedCallback() {
+                this.updateStyle();
+            }
+
+            updateStyle() {
+                const isOpen = this.hasAttribute('open');
+                this.render(`
+                    <style>
+                        .overlay {
+                            position: fixed;
+                            top: 0;
+                            left: 0;
+                            right: 0;
+                            bottom: 0;
+                            background: rgba(0,0,0,0.6);
+                            backdrop-filter: blur(4px);
+                            z-index: 999;
+                            opacity: ${isOpen ? '1' : '0'};
+                            visibility: ${isOpen ? 'visible' : 'hidden'};
+                            transition: all 0.3s;
+                        }
+                        .drawer {
+                            position: fixed;
+                            top: 0;
+                            right: ${isOpen ? '0' : '-450px'};
+                            width: 400px;
+                            max-width: 100vw;
+                            height: 100vh;
+                            background: var(--bg);
+                            border-left: 4px solid var(--primary);
+                            box-shadow: -8px 0 0 var(--border);
+                            z-index: 1000;
+                            transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+                            padding: 32px 24px;
+                            overflow-y: auto;
+                        }
+                        .close-btn {
+                            position: absolute;
+                            top: 24px;
+                            right: 24px;
+                            background: transparent;
+                            border: 2px solid var(--border);
+                            color: var(--text);
+                            width: 40px;
+                            height: 40px;
+                            cursor: pointer;
+                            font-weight: bold;
+                            font-size: 1.25rem;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            transition: all 0.2s;
+                        }
+                        .close-btn:hover {
+                            background: var(--surface);
+                            box-shadow: 4px 4px 0 var(--border);
+                            transform: translate(-2px, -2px);
+                        }
+                        .close-btn:active {
+                            box-shadow: 0 0 0 var(--border);
+                            transform: translate(2px, 2px);
+                        }
+                    </style>
+                    <div class="overlay" id="overlay"></div>
+                    <div class="drawer">
+                        <button class="close-btn" id="close">✕</button>
+                        <slot></slot>
+                    </div>
+                `);
+
+                this.shadowRoot.getElementById('overlay').addEventListener('click', () => this.close());
+                this.shadowRoot.getElementById('close').addEventListener('click', () => this.close());
+            }
+
+            open() {
+                this.setAttribute('open', '');
+            }
+            close() {
+                this.removeAttribute('open');
+            }
+        }
+        customElements.define('hu-drawer', HuDrawer);
+    </script>
+</head>
+<body>
+
+    <div id="eduto-root">
+        
+        <hu-button id="my-enrollments-btn" variant="ghost" style="position:absolute; top:24px; right:24px; width: max-content; z-index: 10;">
+            My Enrollments (0)
+        </hu-button>
+        
+        <hu-drawer id="enrollments-drawer">
+            <hu-text variant="h2" weight="bold" margin-bottom="lg">My Enrollments</hu-text>
+            <div id="enrollments-list"></div>
+        </hu-drawer>
+
+        <hu-box border-bottom="heavy" padding="xl" margin-bottom="lg">
+            <hu-text variant="h1" weight="bold">Learn Real-World Skills.<br/>Online. Professional.</hu-text>
+            <hu-text variant="subtitle" color="muted">Join 5,000+ learners at Eduto Institute.</hu-text>
+        </hu-box>
+
+        <div id="main-content">
+            <hu-box margin-bottom="lg">
+                <hu-tabs id="category-tabs">
+                    <hu-tab value="all" active>All</hu-tab>
+                    <hu-tab value="Frontend">Frontend</hu-tab>
+                    <hu-tab value="Backend">Backend</hu-tab>
+                    <hu-tab value="DevOps">DevOps</hu-tab>
+                    <hu-tab value="Design">Design</hu-tab>
+                    <hu-tab value="Data Science">Data Science</hu-tab>
+                    <hu-tab value="Mobile">Mobile</hu-tab>
+                </hu-tabs>
+            </hu-box>
+
+            <hu-box margin-bottom="xl">
+                <hu-text variant="h2" weight="bold" margin-bottom="md">Featured</hu-text>
+                <hu-grid columns="3" gap="md">
+                    <hu-card featured>
+                        <hu-badge color="red" variant="outline">⚡ Flash Sale</hu-badge>
+                        <hu-text variant="h3" weight="bold" margin-top="sm">Python Professional</hu-text>
+                        <hu-text strikethrough color="muted" margin-bottom="sm">₹8000</hu-text>
+                        <hu-text weight="bold" size="lg" margin-bottom="md">₹5000</hu-text>
+                        <div style="margin-top: auto;">
+                            <hu-button variant="primary" data-course-id="PYTHON-PRO">Enroll</hu-button>
+                        </div>
+                    </hu-card>
+                </hu-grid>
+            </hu-box>
+
+            <hu-box margin-bottom="xl">
+                <hu-text variant="h2" weight="bold" margin-bottom="md">Course Library</hu-text>
+                <hu-grid id="course-grid" columns="4" gap="md">
+                    <!-- Rendered dynamically -->
+                </hu-grid>
+                <hu-empty id="empty-message" style="display:none">No courses in this category.</hu-empty>
+            </hu-box>
+        </div>
+
+        <!-- Enrollment Pathway -->
+        <hu-box id="enrollment-pathway" style="display:none; max-width: 800px; margin: 0 auto;" margin-bottom="xl">
+            <hu-progress id="pathway-progress" current-step="1"></hu-progress>
+            <div id="pathway-content"></div>
+        </hu-box>
+
+        <hu-box border-top="solid" padding="lg">
+            <hu-text align="center" color="muted">feedback@codemoteams.org | WhatsApp: +91-XXXXXXXXXX</hu-text>
+        </hu-box>
+
+    </div>
+
+    <script>
+        // STEP 4 – FUNCTIONALITY
+        
+        const COURSES = [
+            { id: 'FE-REACT', title: 'React Masterclass', category: 'Frontend', duration: '8 Weeks', origPrice: 6000, price: 4000, rating: '★★★★★', mentor: 'Sarah J.' },
+            { id: 'BE-NODE', title: 'Node.js Backend', category: 'Backend', duration: '6 Weeks', origPrice: 5000, price: 3500, rating: '★★★★☆', mentor: 'Mike R.' },
+            { id: 'DO-K8S', title: 'Kubernetes Deep Dive', category: 'DevOps', duration: '4 Weeks', origPrice: null, price: 5000, rating: '★★★★★', mentor: 'Alex W.' },
+            { id: 'DS-UI', title: 'UI/UX Fundamentals', category: 'Design', duration: '5 Weeks', origPrice: null, price: 3000, rating: '★★★★☆', mentor: 'Elena P.' },
+            { id: 'PY-DATA', title: 'Data Science with Python', category: 'Data Science', duration: '10 Weeks', origPrice: 10000, price: 7500, rating: '★★★★★', mentor: 'Dr. Alan T.' },
+            { id: 'MOB-RN', title: 'React Native Pro', category: 'Mobile', duration: '8 Weeks', origPrice: 7000, price: 4500, rating: '★★★★☆', mentor: 'Sarah J.' },
+        ];
+
+        let selectedCourse = null;
+        let enrollmentData = {};
+
+        function renderCourses(category = 'all') {
+            const grid = document.getElementById('course-grid');
+            const empty = document.getElementById('empty-message');
+            grid.innerHTML = '';
+            
+            const filtered = category === 'all' ? COURSES : COURSES.filter(c => c.category === category);
+            
+            if (filtered.length === 0) {
+                grid.style.display = 'none';
+                empty.style.display = 'block';
+            } else {
+                grid.style.display = 'grid'; // Handled by <hu-grid> internally
+                empty.style.display = 'none';
+                
+                filtered.forEach(course => {
+                    const card = document.createElement('hu-card');
+                    card.setAttribute('data-category', course.category);
+                    
+                    let priceHtml = '';
+                    if (course.origPrice) {
+                        priceHtml += `<hu-text strikethrough color="muted">₹${course.origPrice}</hu-text>`;
+                    }
+                    priceHtml += `<hu-text weight="bold" size="lg" margin-bottom="md">₹${course.price}</hu-text>`;
+                    
+                    card.innerHTML = `
+                        <hu-badge variant="outline" color="blue">${course.category}</hu-badge>
+                        <hu-text variant="h3" weight="bold" margin-top="sm">${course.title}</hu-text>
+                        <hu-text color="muted" size="sm">⏱ ${course.duration}</hu-text>
+                        ${priceHtml}
+                        <div style="margin-top: auto;">
+                            <hu-text size="sm" color="orange">${course.rating}</hu-text>
+                            <hu-text color="muted" size="sm" margin-bottom="sm">Mentor: ${course.mentor}</hu-text>
+                            <hu-button variant="primary" data-course-id="${course.id}">Enroll</hu-button>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+
+            // Attach event listeners to all Enroll buttons
+            document.querySelectorAll('hu-button[data-course-id]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.getAttribute('data-course-id');
+                    let course = COURSES.find(c => c.id === id);
+                    if (!course && id === 'PYTHON-PRO') {
+                        course = { id: 'PYTHON-PRO', title: 'Python Professional', category: 'Backend', duration: '12 Weeks', price: 5000, mentor: 'Dr. Alan T.' };
+                    }
+                    if (course) startEnrollment(course);
+                });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCourses();
+            
+            const tabs = document.getElementById('category-tabs');
+            tabs.addEventListener('change', (e) => {
+                renderCourses(e.detail.value);
+            });
+            
+            updateEnrollmentCount();
+            
+            document.getElementById('my-enrollments-btn').addEventListener('click', () => {
+                renderEnrollmentsDrawer();
+                document.getElementById('enrollments-drawer').open();
+            });
+        });
+
+        function startEnrollment(course) {
+            selectedCourse = course;
+            
+            // Fade out main content (simulate transition)
+            document.getElementById('main-content').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('main-content').style.display = 'none';
+                document.getElementById('main-content').style.opacity = '1';
+                
+                document.getElementById('enrollment-pathway').style.display = 'block';
+                renderStep(1);
+            }, 200);
+        }
+
+        function renderStep(step) {
+            document.getElementById('pathway-progress').setAttribute('current-step', step);
+            const content = document.getElementById('pathway-content');
+            content.innerHTML = '';
+            
+            if (step === 1) {
+                content.innerHTML = `
+                    <hu-card>
+                        <hu-text variant="h2" weight="bold">Confirm Course Details</hu-text>
+                        <hu-box border-bottom="solid" padding="md" margin-bottom="md" surface>
+                            <hu-text weight="bold">Course:</hu-text> <hu-text margin-bottom="md">${selectedCourse.title}</hu-text>
+                            <hu-text weight="bold">Mentor:</hu-text> <hu-text margin-bottom="md">${selectedCourse.mentor}</hu-text>
+                            <hu-text weight="bold">Duration:</hu-text> <hu-text>${selectedCourse.duration}</hu-text>
+                        </hu-box>
+                        <hu-text variant="h3" weight="bold" color="primary" align="right">Total Fee: ₹${selectedCourse.price}</hu-text>
+                        
+                        <div style="display:flex; justify-content: flex-end; gap:16px; margin-top:24px;">
+                            <hu-button variant="ghost" id="cancel-pathway" style="width:auto">Cancel</hu-button>
+                            <hu-button variant="primary" id="next-step" style="width:auto">Proceed to Details</hu-button>
+                        </div>
+                    </hu-card>
+                `;
+                document.getElementById('cancel-pathway').addEventListener('click', cancelPathway);
+                document.getElementById('next-step').addEventListener('click', () => renderStep(2));
+            } 
+            else if (step === 2) {
+                content.innerHTML = `
+                    <hu-card>
+                        <hu-text variant="h2" weight="bold">Student Details</hu-text>
+                        <form id="enroll-form" style="margin-top: 16px;">
+                            <hu-input id="inp-name" label="Full Name" placeholder="John Doe"></hu-input>
+                            <hu-input id="inp-email" type="email" label="Email Address" placeholder="john@example.com"></hu-input>
+                            <hu-input id="inp-phone" type="tel" label="Phone Number" placeholder="+91 XXXXX XXXXX"></hu-input>
+                            <hu-input id="inp-city" label="City" placeholder="Mumbai"></hu-input>
+                            
+                            <div style="display:flex; justify-content: space-between; gap:16px; margin-top:32px;">
+                                <hu-button variant="outline" id="prev-step" type="button" style="width:auto">Back</hu-button>
+                                <hu-button variant="primary" id="submit-step" type="button" style="width:auto">Submit & Enroll</hu-button>
+                            </div>
+                        </form>
+                    </hu-card>
+                `;
+                
+                // Restore form data if returning to step 2
+                if (enrollmentData.name) document.getElementById('inp-name').shadowRoot.querySelector('input').value = enrollmentData.name;
+                if (enrollmentData.email) document.getElementById('inp-email').shadowRoot.querySelector('input').value = enrollmentData.email;
+                if (enrollmentData.phone) document.getElementById('inp-phone').shadowRoot.querySelector('input').value = enrollmentData.phone;
+                if (enrollmentData.city) document.getElementById('inp-city').shadowRoot.querySelector('input').value = enrollmentData.city;
+
+                document.getElementById('prev-step').addEventListener('click', () => renderStep(1));
+                
+                document.getElementById('submit-step').addEventListener('click', () => {
+                    let isValid = true;
+                    ['inp-name', 'inp-email', 'inp-phone', 'inp-city'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (!el.value.trim()) {
+                            el.setAttribute('error', '');
+                            el.innerHTML = '<span slot="error">This field is required</span>';
+                            isValid = false;
+                        } else {
+                            el.removeAttribute('error');
+                            el.innerHTML = '';
+                        }
+                    });
+                    
+                    if (isValid) {
+                        enrollmentData = {
+                            name: document.getElementById('inp-name').value.trim(),
+                            email: document.getElementById('inp-email').value.trim(),
+                            phone: document.getElementById('inp-phone').value.trim(),
+                            city: document.getElementById('inp-city').value.trim(),
+                        };
+                        renderStep(3);
+                    }
+                });
+            } 
+            else if (step === 3) {
+                const timestamp = Date.now();
+                const hex = Math.floor(Math.random()*16777215).toString(16).padStart(6, '0').toUpperCase();
+                const paymentId = `EDU-${timestamp}-${hex}`;
+                
+                const enrollment = {
+                    course: selectedCourse,
+                    student: enrollmentData,
+                    paymentId: paymentId,
+                    date: new Date().toISOString(),
+                    status: 'Confirmed'
+                };
+                
+                let enrollments = JSON.parse(localStorage.getItem('eduto_enrollments') || '[]');
+                enrollments.push(enrollment);
+                localStorage.setItem('eduto_enrollments', JSON.stringify(enrollments));
+                updateEnrollmentCount();
+
+                content.innerHTML = `
+                    <hu-card featured>
+                        <hu-text variant="h2" weight="bold" color="primary" align="center">Enrollment Successful!</hu-text>
+                        <hu-text align="center" margin-bottom="lg">Welcome, ${enrollmentData.name}. Your seat is officially reserved.</hu-text>
+                        
+                        <hu-box border-top="solid" border-bottom="solid" padding="md" margin-bottom="lg" surface style="text-align:center;">
+                            <hu-text color="muted" size="sm">Payment / Reference ID</hu-text>
+                            <hu-text variant="h3" weight="bold" style="font-family: monospace; letter-spacing: 2px;">${paymentId}</hu-text>
+                        </hu-box>
+                        
+                        <hu-grid columns="3" gap="sm">
+                            <hu-button variant="outline" id="copy-id">Copy ID</hu-button>
+                            <hu-button variant="primary" id="download-pdf">Save PDF</hu-button>
+                            <hu-button variant="outline" id="share-whatsapp">WhatsApp</hu-button>
+                        </hu-grid>
+                        
+                        <div style="margin-top: 32px; text-align: center;">
+                            <hu-button variant="ghost" id="finish-pathway" style="width: max-content;">Return to Course Library</hu-button>
+                        </div>
+                    </hu-card>
+                `;
+                
+                document.getElementById('copy-id').addEventListener('click', (e) => {
+                    if(navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(paymentId).then(() => {
+                            const btnText = e.target.shadowRoot.querySelector('slot');
+                            if(btnText) {
+                                const oldText = btnText.assignedNodes().map(n => n.textContent).join('');
+                                e.target.innerHTML = 'Copied!';
+                                setTimeout(() => e.target.innerHTML = 'Copy ID', 2000);
+                            }
+                        });
+                    } else {
+                        alert("Clipboard API not available. ID: " + paymentId);
+                    }
+                });
+                
+                document.getElementById('download-pdf').addEventListener('click', () => {
+                    generatePDF(enrollment);
+                });
+                
+                document.getElementById('share-whatsapp').addEventListener('click', () => {
+                    const text = `I just enrolled in ${selectedCourse.title} at Eduto! Reference: ${paymentId}`;
+                    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                });
+                
+                document.getElementById('finish-pathway').addEventListener('click', cancelPathway);
+            }
+        }
+
+        function cancelPathway() {
+            document.getElementById('enrollment-pathway').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+            selectedCourse = null;
+            enrollmentData = {};
+        }
+
+        function updateEnrollmentCount() {
+            const enrollments = JSON.parse(localStorage.getItem('eduto_enrollments') || '[]');
+            const btn = document.getElementById('my-enrollments-btn');
+            btn.innerHTML = `My Enrollments (${enrollments.length})`;
+        }
+
+        function renderEnrollmentsDrawer() {
+            const list = document.getElementById('enrollments-list');
+            const enrollments = JSON.parse(localStorage.getItem('eduto_enrollments') || '[]');
+            list.innerHTML = '';
+            
+            if (enrollments.length === 0) {
+                list.innerHTML = `<hu-empty>No enrollments yet.</hu-empty>`;
+            } else {
+                // Render newest first
+                enrollments.reverse().forEach(enr => {
+                    const el = document.createElement('div');
+                    el.style.marginBottom = '24px';
+                    el.innerHTML = `
+                        <hu-card>
+                            <hu-badge color="green" variant="filled">${enr.status}</hu-badge>
+                            <hu-text variant="h3" weight="bold" margin-top="sm">${enr.course.title}</hu-text>
+                            <hu-text size="sm" color="muted">Ref: ${enr.paymentId}</hu-text>
+                            <hu-text size="sm" color="muted">Date: ${new Date(enr.date).toLocaleDateString()}</hu-text>
+                            <div style="margin-top:16px;">
+                                <hu-button variant="outline" class="download-pdf-btn" style="font-size:0.75rem;">Download Receipt (PDF)</hu-button>
+                            </div>
+                        </hu-card>
+                    `;
+                    el.querySelector('.download-pdf-btn').addEventListener('click', () => generatePDF(enr));
+                    list.appendChild(el);
+                });
+            }
+        }
+
+        function generatePDF(enrollment) {
+            if (typeof window.jspdf === 'undefined') {
+                alert("jsPDF library not loaded. Ensure you are connected to the internet.");
+                return;
+            }
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(22);
+                doc.text("EDUTO INSTITUTE", 20, 20);
+                
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(14);
+                doc.text("Enrollment Receipt", 20, 30);
+                
+                doc.setLineWidth(0.5);
+                doc.line(20, 35, 190, 35);
+                
+                doc.setFontSize(12);
+                doc.text(`Reference ID: ${enrollment.paymentId}`, 20, 45);
+                doc.text(`Date: ${new Date(enrollment.date).toLocaleString()}`, 20, 52);
+                doc.text(`Status: ${enrollment.status}`, 20, 59);
+                
+                doc.setFont("helvetica", "bold");
+                doc.text("Student Details:", 20, 75);
+                doc.setFont("helvetica", "normal");
+                doc.text(`Name: ${enrollment.student.name}`, 25, 82);
+                doc.text(`Email: ${enrollment.student.email}`, 25, 89);
+                doc.text(`Phone: ${enrollment.student.phone}`, 25, 96);
+                
+                doc.setFont("helvetica", "bold");
+                doc.text("Course Details:", 20, 112);
+                doc.setFont("helvetica", "normal");
+                doc.text(`Course: ${enrollment.course.title} (${enrollment.course.category})`, 25, 119);
+                doc.text(`Duration: ${enrollment.course.duration}`, 25, 126);
+                doc.text(`Mentor: ${enrollment.course.mentor}`, 25, 133);
+                
+                doc.setLineWidth(0.5);
+                doc.line(20, 145, 190, 145);
+                
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(14);
+                doc.text(`Total Paid: Rs. ${enrollment.course.price}`, 20, 155);
+                
+                doc.save(`Eduto_Receipt_${enrollment.paymentId}.pdf`);
+            } catch (err) {
+                console.error("PDF Generation failed", err);
+                alert("Failed to generate PDF. Check console for details.");
+            }
+        }
+    </script>
+</body>
+</html>
