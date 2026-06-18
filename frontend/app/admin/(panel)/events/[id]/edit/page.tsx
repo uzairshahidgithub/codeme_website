@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { EventForm } from '@/components/admin/EventForm'
 import type { EventRow } from '@/lib/schemas/events'
 
@@ -10,7 +10,7 @@ const SELECT_COLS =
 
 export default async function EditEventPage({ params }: PageProps) {
   const { id } = await params
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { data: row } = await supabase.from('events').select(SELECT_COLS).eq('id', id).single()
   if (!row) notFound()
   const event = row as EventRow

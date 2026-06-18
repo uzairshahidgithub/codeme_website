@@ -1,17 +1,19 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
-import { CreateEventSchema, type CreateEventInput, EventCategoryEnum, type EventCategory } from '@/lib/schemas/events'
+import { upsertEventAction } from '@/lib/admin/content-actions'
+import { CreateEventSchema, type CreateEventInput } from '@/lib/schemas/events'
+import type { CategoryRow } from '@/lib/schemas/categories'
 
 interface Props {
   initial?: Partial<CreateEventInput> & { id?: string }
   mode: 'create' | 'edit'
 }
 
-const CATEGORIES = EventCategoryEnum.options as readonly EventCategory[]
+const CATEGORIES_FALLBACK = ['webinar', 'bootcamp', 'workshop', 'hackathon', 'seminar', 'conference', 'other']
 
 function isoToLocalInput(iso: string | undefined | null): string {
   if (!iso) return ''
@@ -43,7 +45,8 @@ export function EventForm({ initial, mode }: Props) {
   const [eventMode, setEventMode] = useState<'online' | 'physical'>(initial?.mode ?? 'online')
   const [locationTitle, setLocationTitle] = useState(initial?.location_title ?? '')
   const [locationLink, setLocationLink] = useState(initial?.location_link ?? '')
-  const [category, setCategory] = useState<EventCategory>(initial?.category ?? 'webinar')
+  const [category, setCategory] = useState(initial?.category ?? 'webinar')
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(CATEGORIES_FALLBACK)
   const [startsLocal, setStartsLocal] = useState(isoToLocalInput(initial?.starts_at))
   const [endsLocal, setEndsLocal] = useState(isoToLocalInput(initial?.ends_at))
   const [isRecurring, setIsRecurring] = useState(initial?.is_recurring ?? false)
@@ -59,6 +62,21 @@ export function EventForm({ initial, mode }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   const duration = useMemo(() => durationLabel(startsLocal, endsLocal), [startsLocal, endsLocal])
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase
+      .from('content_categories')
+      .select('slug, label')
+      .eq('kind', 'event')
+      .order('sort_order', { ascending: true })
+      .then(({ data }) => {
+        const rows = (data ?? []) as Pick<CategoryRow, 'slug'>[]
+        if (rows.length > 0) {
+          setCategoryOptions(rows.map((r) => r.slug))
+        }
+      })
+  }, [])
 
   const buildRrule = (): string => {
     let rule = `FREQ=${recFreq}`
@@ -131,24 +149,18 @@ export function EventForm({ initial, mode }: Props) {
     }
 
     setSubmitting(true)
-    const dbPayload = {
-      ...parsed.data,
-      location_link: parsed.data.location_link || null,
-      recurrence_rule: parsed.data.recurrence_rule || null,
-      recurrence_label: parsed.data.recurrence_label || null,
-      banner_url: parsed.data.banner_url || null,
-      cert_template_url: parsed.data.cert_template_url || null,
-      max_attendees: parsed.data.max_attendees ?? null,
+    try {
+      await upsertEventAction({
+        ...parsed.data,
+        id: mode === 'edit' ? initial!.id : undefined,
+      })
+      router.push('/admin/events')
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save event')
+    } finally {
+      setSubmitting(false)
     }
-
-    const result = mode === 'create'
-      ? await supabase.from('events').insert(dbPayload).select('id').single()
-      : await supabase.from('events').update(dbPayload).eq('id', initial!.id!).select('id').single()
-
-    setSubmitting(false)
-    if (result.error) { setError(result.error.message); return }
-    router.push('/admin/events')
-    router.refresh()
   }
 
   return (
@@ -207,7 +219,7 @@ export function EventForm({ initial, mode }: Props) {
 
       <Field label="Category">
         <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map((c) => (
+          {categoryOptions.map((c) => (
             <button
               key={c} type="button" onClick={() => setCategory(c)}
               className="capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"

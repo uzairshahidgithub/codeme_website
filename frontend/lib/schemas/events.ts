@@ -16,7 +16,7 @@ export const CreateEventSchema = z.object({
   mode:            EventModeEnum,
   location_title:  z.string().min(2).max(100),
   location_link:   z.string().url('Must be a valid URL').optional().or(z.literal('')),
-  category:        EventCategoryEnum,
+  category:        z.string().min(2).max(40),
   starts_at:       z.string().datetime({ offset: true }),
   ends_at:         z.string().datetime({ offset: true }),
   is_recurring:    z.boolean().default(false),
@@ -59,7 +59,7 @@ export interface EventRow {
   mode: EventMode
   location_title: string
   location_link: string | null
-  category: EventCategory
+  category: string
   starts_at: string
   ends_at: string
   status: EventStatus

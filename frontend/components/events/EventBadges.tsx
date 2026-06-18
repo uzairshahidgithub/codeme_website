@@ -1,12 +1,14 @@
 import { CATEGORY_COLOURS, CATEGORY_LABELS, type EventCategory, type EventMode } from '@/lib/schemas/events'
 
-export function CategoryBadge({ category, size = 'md' }: { category: EventCategory; size?: 'sm' | 'md' }) {
+export function CategoryBadge({ category, size = 'md' }: { category: string; size?: 'sm' | 'md' }) {
   const fontSize = size === 'sm' ? 11 : 12
   const padding = size === 'sm' ? '4px 10px' : '5px 12px'
+  const colour = CATEGORY_COLOURS[category as EventCategory] ?? 'var(--blue)'
+  const label = CATEGORY_LABELS[category as EventCategory] ?? (category.charAt(0).toUpperCase() + category.slice(1))
   return (
     <span
       style={{
-        background: CATEGORY_COLOURS[category],
+        background: colour,
         color: '#ffffff',
         padding,
         borderRadius: 999,
@@ -17,7 +19,7 @@ export function CategoryBadge({ category, size = 'md' }: { category: EventCatego
         lineHeight: 1.2,
       }}
     >
-      {CATEGORY_LABELS[category]}
+      {label}
     </span>
   )
 }

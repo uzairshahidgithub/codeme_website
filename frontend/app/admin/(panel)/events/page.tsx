@@ -1,7 +1,9 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { deleteEventAction } from '@/lib/admin/content-actions'
 import type { EventRow, EventStatus } from '@/lib/schemas/events'
 import { CategoryBadge, ModeBadge, formatShortDate, formatTime } from '@/components/events/EventBadges'
+import { AdminDeleteButton } from '@/components/admin/AdminDeleteButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,7 +21,7 @@ function statusColour(s: EventStatus) {
 }
 
 export default async function AdminEventsPage() {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { data: events, error } = await supabase
     .from('events').select(SELECT_COLS).order('starts_at', { ascending: false })
 
@@ -93,9 +95,10 @@ export default async function AdminEventsPage() {
                   padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 500, textTransform: 'capitalize',
                 }}>{ev.status}</span>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <Link href={`/admin/events/${ev.id}/edit`} className="text-text-link" style={{ fontSize: 13 }}>Edit</Link>
                 <Link href={`/admin/events/${ev.id}/attendance`} className="text-text-link" style={{ fontSize: 13 }}>Attendance</Link>
+                <AdminDeleteButton label={ev.title} onDelete={() => deleteEventAction(ev.id)} />
               </div>
             </div>
           )

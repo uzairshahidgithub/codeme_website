@@ -8,82 +8,41 @@ import { createClient } from '@/lib/supabase/client'
 import { CodemoLogo } from '@/components/ui/CodemoLogo'
 import 'react-phone-number-input/style.css'
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input'
+import { CATEGORY_COLOURS, CATEGORY_LABELS } from '@/lib/schemas/events'
 
-// Mock Data
-const MOCK_EVENTS = [
-  {
-    id: '1',
-    title: 'Codemo Frontend Masters Bootcamp',
-    description: 'An intensive 4-week bootcamp covering advanced React, Next.js, and GSAP animations.',
-    category: 'Bootcamp',
-    date: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 15).toISOString(),
-    location: 'Online',
-  },
-  {
-    id: '2',
-    title: 'Building Spatial Interfaces with 3D CSS',
-    description: 'Learn the principles of Antigravity design and glassmorphism in this interactive workshop.',
-    category: 'Workshop',
-    date: new Date(new Date().getFullYear(), new Date().getMonth(), 18).toISOString(),
-    location: 'San Francisco, CA',
-  },
-  {
-    id: '3',
-    title: 'The Future of Web Typography Webinar',
-    description: 'Join industry leaders as they discuss variable fonts, editorial layouts, and performance.',
-    category: 'Webinar',
-    date: new Date(new Date().getFullYear(), new Date().getMonth(), 22).toISOString(),
-    location: 'Online',
-  },
-  {
-    id: '4',
-    title: 'Global Accessibility Hackathon 2026',
-    description: 'Build tools that make the web more accessible. Prizes up to $50,000.',
-    category: 'Hackathon',
-    date: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 5).toISOString(),
-    location: 'London & Online',
-  },
-  {
-    id: '5',
-    title: 'Advanced State Management Bootcamp',
-    description: 'Deep dive into Zustand, Jotai, and React Query for enterprise-grade applications.',
-    category: 'Bootcamp',
-    date: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 12).toISOString(),
-    location: 'Online',
-  },
-  {
-    id: '6',
-    title: 'WebAssembly for JS Developers',
-    description: 'A 2-hour webinar on bridging Rust and C++ with your frontend code via WASM.',
-    category: 'Webinar',
-    date: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 18).toISOString(),
-    location: 'Online',
-  },
-  {
-    id: '7',
-    title: 'Design System Architecture Workshop',
-    description: 'Architect scalable UI components with Tailwind CSS and React Server Components.',
-    category: 'Workshop',
-    date: new Date(new Date().getFullYear(), new Date().getMonth() + 2, 8).toISOString(),
-    location: 'New York, NY',
-  },
-  {
-    id: '8',
-    title: 'AI in the Browser Hackathon',
-    description: 'Leverage WebGPU and ONNX.js to run local LLMs and vision models in the browser.',
-    category: 'Hackathon',
-    date: new Date(new Date().getFullYear(), new Date().getMonth() + 2, 20).toISOString(),
-    location: 'Online',
-  },
+interface PublicEvent {
+  id: string
+  title: string
+  description: string
+  category: string
+  categoryLabel: string
+  date: string
+  location: string
+}
+
+interface TopicCategory {
+  slug: string
+  label: string
+  color: string
+}
+
+const DEFAULT_TOPICS: TopicCategory[] = [
+  { slug: 'webinar', label: 'Webinar', color: '#3B82F6' },
+  { slug: 'bootcamp', label: 'Bootcamp', color: '#F59E0B' },
+  { slug: 'workshop', label: 'Workshop', color: '#10B981' },
+  { slug: 'hackathon', label: 'Hackathon', color: '#EF4444' },
 ]
 
-const CATEGORIES = ['Webinar', 'Bootcamp', 'Workshop', 'Hackathon']
+function categoryColor(slug: string, topics: TopicCategory[]): string {
+  const found = topics.find((t) => t.slug === slug)
+  if (found) return found.color
+  return CATEGORY_COLOURS[slug as keyof typeof CATEGORY_COLOURS] ?? 'var(--blue)'
+}
 
-const CATEGORY_COLORS: Record<string, string> = {
-  Webinar: '#3B82F6', // Blue
-  Workshop: '#10B981', // Green
-  Bootcamp: '#F59E0B', // Orange
-  Hackathon: '#EF4444', // Red
+function categoryLabel(slug: string, topics: TopicCategory[]): string {
+  const found = topics.find((t) => t.slug === slug)
+  if (found) return found.label
+  return CATEGORY_LABELS[slug as keyof typeof CATEGORY_LABELS] ?? (slug.charAt(0).toUpperCase() + slug.slice(1))
 }
 
 type ViewMode = 'grid' | 'list'
@@ -157,13 +116,58 @@ export function EventsClient() {
   const [sort, setSort] = useState<SortMode>('newest')
   const [isSortOpen, setIsSortOpen] = useState(false)
   const sortRef = useRef<HTMLDivElement>(null)
+  const [events, setEvents] = useState<PublicEvent[]>([])
+  const [topicCategories, setTopicCategories] = useState<TopicCategory[]>(DEFAULT_TOPICS)
+  const [loadingEvents, setLoadingEvents] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
-  const [selectedEventToRegister, setSelectedEventToRegister] = useState<typeof MOCK_EVENTS[0] | null>(null)
+  const [selectedEventToRegister, setSelectedEventToRegister] = useState<PublicEvent | null>(null)
   const [isSuccessPopupOpen, setIsSuccessPopupOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [registeredEvent, setRegisteredEvent] = useState<{ name: string, eventType: string, date: string, isDuplicate?: boolean } | null>(null)
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [phone, setPhone] = useState<string | undefined>()
+
+  useEffect(() => {
+    const supabase = createClient()
+    async function loadEvents() {
+      setLoadingEvents(true)
+      setLoadError(null)
+      const [eventsRes, catsRes] = await Promise.all([
+        supabase
+          .from('events')
+          .select('id, title, description, category, starts_at, location_title, mode')
+          .eq('status', 'published')
+          .order('starts_at', { ascending: true }),
+        supabase
+          .from('content_categories')
+          .select('slug, label, color')
+          .eq('kind', 'event')
+          .order('sort_order', { ascending: true }),
+      ])
+
+      if (eventsRes.error) {
+        setLoadError(eventsRes.error.message)
+        setEvents([])
+      } else {
+        const topics = (catsRes.data?.length ? catsRes.data : DEFAULT_TOPICS) as TopicCategory[]
+        setTopicCategories(topics)
+        setEvents(
+          (eventsRes.data ?? []).map((row) => ({
+            id: row.id,
+            title: row.title,
+            description: row.description,
+            category: row.category,
+            categoryLabel: categoryLabel(row.category, topics),
+            date: row.starts_at,
+            location: row.location_title || (row.mode === 'online' ? 'Online' : 'In person'),
+          })),
+        )
+      }
+      setLoadingEvents(false)
+    }
+    loadEvents()
+  }, [])
 
   useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
@@ -176,7 +180,7 @@ export function EventsClient() {
     return () => document.removeEventListener('keydown', handleEscape)
   }, [])
 
-  const handleRegisterClick = async (event: typeof MOCK_EVENTS[0]) => {
+  const handleRegisterClick = async (event: PublicEvent) => {
     const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
@@ -233,7 +237,7 @@ export function EventsClient() {
     googleFormData.append(FIELD_MAP.email, email)
     googleFormData.append(FIELD_MAP.phone, phone || '')
     googleFormData.append(FIELD_MAP.eventTitle, selectedEventToRegister!.title)
-    googleFormData.append(FIELD_MAP.eventType, selectedEventToRegister!.category)
+    googleFormData.append(FIELD_MAP.eventType, selectedEventToRegister!.categoryLabel)
     googleFormData.append(FIELD_MAP.isMember, isMember)
 
     setIsSubmitting(true)
@@ -254,7 +258,7 @@ export function EventsClient() {
 
       const newRegistration = {
         name: fullName,
-        eventType: selectedEventToRegister!.category,
+        eventType: selectedEventToRegister!.categoryLabel,
         date: new Date().toLocaleDateString('en-GB')
       }
 
@@ -267,7 +271,7 @@ export function EventsClient() {
 
       const newRegistration = {
         name: fullName,
-        eventType: selectedEventToRegister!.category,
+        eventType: selectedEventToRegister!.categoryLabel,
         date: new Date().toLocaleDateString('en-GB')
       }
 
@@ -374,7 +378,7 @@ export function EventsClient() {
   }, [])
 
   const getEventsForDate = (date: Date) => {
-    return MOCK_EVENTS.filter(e => {
+    return events.filter(e => {
       const ed = new Date(e.date)
       return ed.getFullYear() === date.getFullYear() &&
         ed.getMonth() === date.getMonth() &&
@@ -395,7 +399,7 @@ export function EventsClient() {
 
   // Filter & Sort Logic
   const filteredEvents = useMemo(() => {
-    let result = MOCK_EVENTS.filter(event => {
+    let result = events.filter(event => {
       // 1. Tag filtering (if empty, show all)
       if (selectedTags.length > 0 && !selectedTags.includes(event.category)) return false
 
@@ -422,7 +426,7 @@ export function EventsClient() {
     })
 
     return result
-  }, [selectedTags, selectedDate, sort])
+  }, [selectedTags, selectedDate, sort, events])
 
   // Handlers
   const toggleTag = (tag: string) => {
@@ -444,20 +448,21 @@ export function EventsClient() {
   }
 
   return (
-    <div id="events-root" className="grid grid-cols-1 md:grid-cols-[1fr_300px] lg:grid-cols-[1fr_340px] gap-8 lg:gap-12 items-start w-full font-sans">
+    <div id="events-root" className="flex flex-col gap-6 md:gap-8 w-full font-sans">
 
-      {/* LEFT: MAIN CONTENT */}
-      <div className="flex flex-col w-full order-2 md:order-1 min-w-0">
-
-        {/* ── Filter Pills (horizontal scroll, MOBILE ONLY) ───────────────── */}
-        <div className="flex items-center gap-3 mb-4 overflow-x-auto pb-2 scrollbar-hide md:hidden" style={{ WebkitOverflowScrolling: 'touch' }}>
-          {CATEGORIES.map(cat => {
-            const isActive = selectedTags.includes(cat)
+      {/* ── Filter by Topic (all screen sizes) ───────────────── */}
+      <section className="p-5 md:p-6 rounded-[26px] border border-border-subtle bg-bg-surface backdrop-blur-[24px] w-full">
+        <h3 className="text-[12px] uppercase tracking-[0.16em] font-semibold mb-4 text-text-tertiary">
+          Filter by Topic
+        </h3>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {topicCategories.map(cat => {
+            const isActive = selectedTags.includes(cat.slug)
             return (
               <button
-                key={cat}
-                onClick={() => toggleTag(cat)}
-                className="shrink-0 px-4 py-1.5 rounded-full text-[13px] font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+                key={cat.slug}
+                onClick={() => toggleTag(cat.slug)}
+                className="px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
                 style={{
                   background: isActive ? 'var(--blue)' : 'transparent',
                   color: isActive ? '#fff' : 'var(--text1)',
@@ -468,20 +473,34 @@ export function EventsClient() {
                 }}
                 aria-pressed={isActive}
               >
-                {cat}
+                {cat.label}
               </button>
             )
           })}
           {(selectedTags.length > 0 || selectedDate) && (
             <button
               onClick={() => { setSelectedTags([]); setSelectedDate(null) }}
-              className="shrink-0 flex items-center gap-1.5 text-[13px] px-3 py-1.5 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-input transition-colors"
+              className="flex items-center gap-1.5 text-[13px] px-3 py-1.5 rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-input transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
             >
               <X size={14} />
               Clear
             </button>
           )}
         </div>
+      </section>
+
+      {loadError && (
+        <p className="text-text-error text-sm">Could not load events: {loadError}</p>
+      )}
+
+      {loadingEvents ? (
+        <div className="text-text-tertiary text-center py-16 text-sm">Loading events…</div>
+      ) : (
+      <>
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] lg:grid-cols-[1fr_340px] gap-8 lg:gap-12 items-start w-full">
+
+      {/* LEFT: Events */}
+      <div className="flex flex-col w-full min-w-0">
 
         {/* ── Mini-Calendar Strip (14 days, horizontal scroll, MOBILE ONLY) ─ */}
         <div
@@ -535,7 +554,7 @@ export function EventsClient() {
                           width: 5,
                           height: 5,
                           borderRadius: 999,
-                          background: isSelected ? '#fff' : (CATEGORY_COLORS[ev.category] || 'var(--blue)'),
+                          background: isSelected ? '#fff' : categoryColor(ev.category, topicCategories),
                         }}
                       />
                     ))
@@ -669,7 +688,7 @@ export function EventsClient() {
                       <div className="mt-5 flex flex-wrap gap-2">
                         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider border border-current text-text-primary bg-transparent"
                         >
-                          {e.category}
+                          {e.categoryLabel}
                         </span>
                       </div>
                     </div>
@@ -731,7 +750,7 @@ export function EventsClient() {
                         <span
                           className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border border-current text-text-primary bg-transparent"
                         >
-                          {e.category}
+                          {e.categoryLabel}
                         </span>
                         <span className="text-[12px] font-medium text-text-tertiary">{t.day} {t.date} · {t.time}</span>
                       </div>
@@ -774,38 +793,10 @@ export function EventsClient() {
 
         </div>
 
-        {/* RIGHT: SIDEBAR (DESKTOP ONLY) */}
-        <div className="hidden md:flex flex-col w-full order-1 md:order-2 sticky top-[112px] max-h-[calc(100vh-112px)] overflow-y-auto scrollbar-hide gap-6 pb-8">
+      </div>
 
-          {/* Tags Filter */}
-          <div className="p-6 rounded-[26px] border border-border-subtle bg-bg-surface backdrop-blur-[24px]">
-            <h3 className="text-[12px] uppercase tracking-[0.16em] font-semibold mb-5 text-text-tertiary">
-              Filter by Topic
-            </h3>
-            <div className="flex flex-wrap gap-2.5">
-              {CATEGORIES.map(cat => {
-                const isActive = selectedTags.includes(cat)
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => toggleTag(cat)}
-                    className="px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
-                    style={{
-                      background: isActive ? 'var(--blue)' : 'transparent',
-                      color: isActive ? '#fff' : 'var(--text1)',
-                      borderColor: isActive ? 'var(--blue)' : 'var(--border)',
-                      borderWidth: 1,
-                      borderStyle: 'solid',
-                      boxShadow: isActive ? '0 4px 16px -4px color-mix(in oklab, var(--blue) 50%, transparent)' : 'none'
-                    }}
-                    aria-pressed={isActive}
-                  >
-                    {cat}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+      {/* RIGHT: Calendar sidebar (desktop) */}
+      <aside className="hidden md:flex flex-col w-full sticky top-[112px] max-h-[calc(100vh-112px)] overflow-y-auto scrollbar-hide pb-8">
 
           {/* Calendar Widget */}
           <div className="p-6 rounded-[26px] border border-border-subtle bg-bg-surface backdrop-blur-[24px]">
@@ -838,7 +829,7 @@ export function EventsClient() {
                 const isSelected = selectedDate && isSameDay(selectedDate, dateObj)
 
                 // Find events on this day
-                const dayEvents = MOCK_EVENTS.filter(e => {
+                const dayEvents = events.filter(e => {
                   const eDate = new Date(e.date)
                   // Filter by active tags as well if any are selected
                   if (selectedTags.length > 0 && !selectedTags.includes(e.category)) return false
@@ -883,9 +874,11 @@ export function EventsClient() {
             </div>
           </div>
 
-        </div>
+      </aside>
 
       </div>
+      </>
+      )}
 
       {/* Registration Modal */}
       {selectedEventToRegister && (
@@ -944,7 +937,7 @@ export function EventsClient() {
                 <input
                   type="text"
                   name="eventType"
-                  value={selectedEventToRegister.category}
+                  value={selectedEventToRegister.categoryLabel}
                   readOnly
                   className="w-full px-4 py-2.5 bg-bg-surface-elevated border border-border-subtle rounded-xl text-text-tertiary cursor-not-allowed"
                 />
