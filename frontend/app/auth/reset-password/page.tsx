@@ -7,6 +7,8 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { getTurnstileErrorMessage, getTurnstileSiteKey } from '@/lib/utils'
+import { Turnstile } from '@marsidev/react-turnstile'
 import Link from 'next/link'
 
 const schema = z.object({ email: z.string().email('Please enter a valid email address') })
@@ -16,21 +18,32 @@ export default function ResetPasswordPage() {
   const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [serverError, setServerError] = useState('')
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
 
   async function onSubmit(data: FormData) {
+    if (!turnstileToken) {
+      setServerError('Please wait for the security check to complete.')
+      return
+    }
+
     setServerError('')
     setLoading(true)
     const supabase = createClient()
     const origin = window.location.origin.replace('0.0.0.0', 'localhost')
     const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
       redirectTo: `${origin}/auth/callback?type=recovery`,
+      captchaToken: turnstileToken,
     })
     setLoading(false)
-    if (error) { setServerError(error.message); return }
+    if (error) {
+      setServerError(error.message)
+      setTurnstileToken(null)
+      return
+    }
     setSent(true)
   }
 
@@ -78,15 +91,25 @@ export default function ResetPasswordPage() {
         {...register('email')}
       />
 
+      <div className="mt-2 flex justify-center">
+        <Turnstile
+          siteKey={getTurnstileSiteKey()}
+          onSuccess={(token) => setTurnstileToken(token)}
+          onError={(code) => setServerError(getTurnstileErrorMessage(String(code)))}
+          onExpire={() => setTurnstileToken(null)}
+          options={{ theme: 'dark' }}
+        />
+      </div>
+
       <div className="flex justify-center">
         <Button
           variant="primary"
           className="w-[200px] h-[50px]"
           onClick={handleSubmit(onSubmit)}
-          disabled={loading}
-          aria-busy={loading}
+          disabled={loading || !turnstileToken}
+          aria-busy={loading || !turnstileToken}
         >
-          {loading ? 'Sending…' : 'Send Reset Link'}
+          {loading ? 'Sending…' : (!turnstileToken ? 'Verifying security…' : 'Send Reset Link')}
         </Button>
       </div>
 

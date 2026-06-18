@@ -10,6 +10,8 @@ import { useSignupStore } from '@/stores/signup'
 import { Input } from '@/components/ui/Input'
 import { PasswordInput } from '@/components/ui/PasswordInput'
 import { Button } from '@/components/ui/Button'
+import { getTurnstileErrorMessage, getTurnstileSiteKey } from '@/lib/utils'
+import { Turnstile } from '@marsidev/react-turnstile'
 import Link from 'next/link'
 
 const formSchema = z.object({
@@ -24,6 +26,7 @@ export default function LoginPage() {
   const email = draft.email
   const [serverError, setServerError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
 
   const {
     register,
@@ -38,6 +41,11 @@ export default function LoginPage() {
   const password = watch('password', '')
 
   async function onSubmit(data: FormData) {
+    if (!turnstileToken) {
+      setServerError('Please wait for the security check to complete.')
+      return
+    }
+
     setServerError('')
     setLoading(true)
 
@@ -45,10 +53,12 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({
       email: data.email,
       password: data.password,
+      options: { captchaToken: turnstileToken },
     })
 
     if (error) {
       setServerError('Email or password is incorrect')
+      setTurnstileToken(null)
       setLoading(false)
       return
     }
@@ -92,16 +102,27 @@ export default function LoginPage() {
         </Link>
       </div>
 
+      {/* Cloudflare Turnstile — required when Supabase captcha protection is enabled */}
+      <div className="mt-4 flex justify-center">
+        <Turnstile
+          siteKey={getTurnstileSiteKey()}
+          onSuccess={(token) => setTurnstileToken(token)}
+          onError={(code) => setServerError(getTurnstileErrorMessage(String(code)))}
+          onExpire={() => setTurnstileToken(null)}
+          options={{ theme: 'dark' }}
+        />
+      </div>
+
       {/* Login button */}
       <div className="flex justify-center mt-6">
         <Button
           variant="primary"
           className="w-[200px] h-[56px] shadow-[0_0_30px_rgba(59,130,246,0.2)]"
           onClick={handleSubmit(onSubmit)}
-          disabled={loading || password.length < 8}
-          aria-busy={loading}
+          disabled={loading || password.length < 8 || !turnstileToken}
+          aria-busy={loading || !turnstileToken}
         >
-          {loading ? 'Logging in…' : 'Login'}
+          {loading ? 'Logging in…' : (!turnstileToken ? 'Verifying security…' : 'Login')}
         </Button>
       </div>
 

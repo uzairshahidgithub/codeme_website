@@ -8,6 +8,8 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/Button'
 import { CodemoLogo } from '@/components/ui/CodemoLogo'
+import { getTurnstileErrorMessage, getTurnstileSiteKey } from '@/lib/utils'
+import { Turnstile } from '@marsidev/react-turnstile'
 
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -34,12 +36,18 @@ function AdminAuthInner() {
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [serverError, setServerError] = useState<string | null>(denied ? 'Access denied. This account does not have admin privileges.' : null)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
 
   async function onSubmit(data: FormData) {
+    if (!turnstileToken) {
+      setServerError('Please wait for the security check to complete.')
+      return
+    }
+
     setSubmitting(true)
     setServerError(null)
     const supabase = createClient()
@@ -47,11 +55,13 @@ function AdminAuthInner() {
     const { data: signIn, error } = await supabase.auth.signInWithPassword({
       email: data.email,
       password: data.password,
+      options: { captchaToken: turnstileToken },
     })
 
     if (error || !signIn.session) {
       setSubmitting(false)
       setServerError('Invalid credentials.')
+      setTurnstileToken(null)
       return
     }
 
@@ -133,14 +143,24 @@ function AdminAuthInner() {
 
           {serverError && <p className="text-center text-sm text-text-error">{serverError}</p>}
 
+          <div className="flex justify-center">
+            <Turnstile
+              siteKey={getTurnstileSiteKey()}
+              onSuccess={(token) => setTurnstileToken(token)}
+              onError={(code) => setServerError(getTurnstileErrorMessage(String(code)))}
+              onExpire={() => setTurnstileToken(null)}
+              options={{ theme: 'dark' }}
+            />
+          </div>
+
           <Button
             variant="primary"
             className="w-full h-[48px] mt-1"
-            disabled={submitting}
-            aria-busy={submitting}
+            disabled={submitting || !turnstileToken}
+            aria-busy={submitting || !turnstileToken}
             onClick={handleSubmit(onSubmit)}
           >
-            {submitting ? 'Signing in…' : 'Sign In'}
+            {submitting ? 'Signing in…' : (!turnstileToken ? 'Verifying security…' : 'Sign In')}
           </Button>
 
           <p className="text-center text-text-tertiary" style={{ fontSize: 11 }}>
