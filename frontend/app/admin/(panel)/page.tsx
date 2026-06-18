@@ -1,52 +1,9 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
-import { UserGrowthChart, RoleDonutChart, type GrowthPoint, type RolePoint } from '@/components/admin/AdminCharts'
+import { UserGrowthChart, RoleDonutChart } from '@/components/admin/AdminCharts'
+import { loadAdminDashboardData } from '@/lib/admin/dashboard-data'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 60
-
-interface AdminStats {
-  total_users: number
-  new_users_week: number
-  new_users_month: number
-  active_today: number
-  active_events: number
-  active_courses: number
-  pending_testimonials: number
-  draft_articles: number
-}
-
-interface AuditEntry {
-  id: string
-  user_id: string | null
-  action: string
-  metadata: Record<string, unknown> | null
-  created_at: string
-}
-
-async function loadDashboardData() {
-  const supabase = await createClient()
-
-  const [statsRes, growthRes, rolesRes, auditRes] = await Promise.all([
-    supabase.rpc('get_admin_stats_secured').single<AdminStats>(),
-    supabase.rpc('get_user_growth_30d'),
-    supabase.rpc('get_role_breakdown'),
-    supabase.from('audit_log').select('id, user_id, action, metadata, created_at').order('created_at', { ascending: false }).limit(10),
-  ])
-
-  return {
-    stats: statsRes.data ?? null,
-    growth: ((growthRes.data ?? []) as Array<{ day: string; signups: number | string }>).map((d) => ({
-      day: typeof d.day === 'string' ? d.day.slice(5) : '',
-      signups: Number(d.signups),
-    })) satisfies GrowthPoint[],
-    roles: ((rolesRes.data ?? []) as Array<{ role: string; total: number | string }>).map((r) => ({
-      role: r.role,
-      total: Number(r.total),
-    })) satisfies RolePoint[],
-    audit: ((auditRes.data ?? []) as AuditEntry[]),
-  }
-}
 
 const cardStyle = {
   background: 'var(--card-glass)',
@@ -79,7 +36,7 @@ function shortId(id: string | null): string {
 }
 
 export default async function AdminDashboardPage() {
-  const { stats, growth, roles, audit } = await loadDashboardData()
+  const { stats, growth, roles, audit, error } = await loadAdminDashboardData()
 
   const pendingReview = (stats?.pending_testimonials ?? 0) + (stats?.draft_articles ?? 0)
 
@@ -89,6 +46,12 @@ export default async function AdminDashboardPage() {
         <span className="home-mono-eyebrow">Admin Dashboard</span>
         <h1 className="text-text-primary" style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-0.01em' }}>Overview</h1>
       </header>
+
+      {error && (
+        <div className="text-text-error" style={{ fontSize: 14, padding: 16, borderRadius: 12, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)' }}>
+          Dashboard data unavailable: {error}
+        </div>
+      )}
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

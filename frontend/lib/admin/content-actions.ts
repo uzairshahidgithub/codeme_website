@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isAdminRole } from '@/lib/admin/roles'
+import { getProfileForUser } from '@/lib/admin/auth'
 import { CreateEventSchema, type CreateEventInput } from '@/lib/schemas/events'
 import { CourseSchema, type CourseInput } from '@/lib/schemas/courses'
 import { CategorySchema, type CategoryInput } from '@/lib/schemas/categories'
@@ -13,6 +15,12 @@ async function assertAdminSession() {
   if (error || !user) {
     throw new Error('You must be signed in to perform this action.')
   }
+
+  const profile = await getProfileForUser(user.id)
+  if (!profile || !isAdminRole(profile.role)) {
+    throw new Error('Forbidden: admin role required.')
+  }
+
   return user
 }
 
@@ -131,4 +139,18 @@ export async function deleteCategoryAction(id: string): Promise<void> {
   if (error) throw new Error(error.message)
   revalidatePath('/admin/categories')
   revalidatePath('/events')
+}
+
+export async function updateUserRoleAction(userId: string, role: 'member' | 'moderator' | 'admin' | 'super_admin'): Promise<void> {
+  await assertAdminSession()
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const actorProfile = user ? await getProfileForUser(user.id) : null
+  if (actorProfile?.role !== 'super_admin') {
+    throw new Error('Only super_admin can change user roles.')
+  }
+
+  const { error } = await adminDb().from('profiles').update({ role }).eq('id', userId)
+  if (error) throw new Error(error.message)
+  revalidatePath('/admin/users')
 }

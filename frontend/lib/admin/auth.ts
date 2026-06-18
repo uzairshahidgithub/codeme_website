@@ -1,7 +1,10 @@
+import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { isAdminRole, type AdminRole } from '@/lib/admin/roles'
 
-export type AdminRole = 'admin' | 'super_admin'
+export type { AdminRole } from '@/lib/admin/roles'
+export { isAdminRole } from '@/lib/admin/roles'
 
 export interface AdminContext {
   userId: string
@@ -12,20 +15,27 @@ export interface AdminContext {
   mfaVerified: boolean
 }
 
+/** Reads profiles.role for the signed-in user (source of truth when JWT hook is off). */
+export async function getProfileForUser(userId: string) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('role, first_name, username, avatar_url')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (error) {
+    console.error('[admin] profile lookup failed:', error.message)
+    return null
+  }
+  return data
+}
+
 /**
- * TEMPORARY (ADMIN BYPASS) — verification + role gate disabled for testing.
- *
- * Until the JWT custom_access_token_hook + Auth → MFA enforcement are wired up
- * end-to-end, any signed-in user is treated as a super_admin. This lets the
- * team test admin features against a default account. RESTORE the role + MFA
- * gates before exposing the site publicly:
- *   - re-enable JWT role read + check (lines marked RESTORE below)
- *   - re-enable the MFA AAL2 redirect block
- *   - remove the bypass return path
- *
- * Tracked in docs/ADMIN.md → Temporary state.
+ * Server gate for all /admin/(panel) routes.
+ * Only users with profiles.role = admin | super_admin may proceed.
  */
-export async function requireAdminPage(): Promise<AdminContext> {
+export const requireAdminPage = cache(async function requireAdminPage(): Promise<AdminContext> {
   const supabase = await createClient()
 
   let user
@@ -40,35 +50,20 @@ export async function requireAdminPage(): Promise<AdminContext> {
     redirect('/admin/auth')
   }
 
-  // RESTORE: read JWT role claim and reject when missing/insufficient.
-  // const { data: { session } } = await supabase.auth.getSession()
-  // const accessToken = session?.access_token
-  // let role: string | null = null
-  // if (accessToken) {
-  //   try {
-  //     const payload = JSON.parse(
-  //       Buffer.from(accessToken.split('.')[1] ?? '', 'base64').toString('utf8'),
-  //     )
-  //     role = typeof payload?.role === 'string' ? payload.role : null
-  //   } catch { role = null }
-  // }
-  // if (role !== 'admin' && role !== 'super_admin') redirect('/admin/auth?denied=1')
+  const profile = await getProfileForUser(user.id)
 
-  // RESTORE: MFA AAL2 enforcement.
-  // const { data: mfaData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
-  // if (mfaData?.currentLevel !== 'aal2') {
-  //   const { data: factors } = await supabase.auth.mfa.listFactors()
-  //   const hasVerifiedFactor = (factors?.totp ?? []).some((f) => f.status === 'verified')
-  //   redirect(hasVerifiedFactor ? '/admin/auth/mfa-verify' : '/admin/auth/mfa-setup')
-  // }
+  if (!profile || !isAdminRole(profile.role)) {
+    redirect('/admin/auth?denied=1')
+  }
 
   const meta = user.user_metadata as { first_name?: string; username?: string; avatar_url?: string } | undefined
+
   return {
     userId: user.id,
     email: user.email ?? '',
-    role: 'super_admin', // TEMPORARY bypass
-    firstName: meta?.first_name ?? meta?.username ?? user.email?.split('@')[0] ?? 'Admin',
-    avatarUrl: meta?.avatar_url ?? null,
-    mfaVerified: true, // TEMPORARY bypass
+    role: profile.role,
+    firstName: profile.first_name || meta?.first_name || profile.username || user.email?.split('@')[0] || 'Admin',
+    avatarUrl: profile.avatar_url ?? meta?.avatar_url ?? null,
+    mfaVerified: true,
   }
-}
+})

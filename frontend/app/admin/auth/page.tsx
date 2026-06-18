@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/client'
+import { isAdminRole } from '@/lib/admin/roles'
 import { Button } from '@/components/ui/Button'
 import { CodemoLogo } from '@/components/ui/CodemoLogo'
 import { getTurnstileErrorMessage, getTurnstileSiteKey } from '@/lib/utils'
@@ -58,16 +59,27 @@ function AdminAuthInner() {
       options: { captchaToken: turnstileToken },
     })
 
-    if (error || !signIn.session) {
+    if (error || !signIn.session || !signIn.user) {
       setSubmitting(false)
       setServerError('Invalid credentials.')
       setTurnstileToken(null)
       return
     }
 
-    // TEMPORARY: role + MFA gates disabled. Any signed-in user reaches the dashboard.
-    // RESTORE: re-enable role decode + MFA destination redirect from git history
-    // when the JWT hook + MFA enforcement are wired up end-to-end.
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', signIn.user.id)
+      .maybeSingle()
+
+    if (!profile || !isAdminRole(profile.role)) {
+      await supabase.auth.signOut()
+      setSubmitting(false)
+      setServerError('Access denied. This account does not have admin privileges.')
+      setTurnstileToken(null)
+      return
+    }
+
     router.refresh()
     router.replace('/admin')
   }
@@ -164,7 +176,7 @@ function AdminAuthInner() {
           </Button>
 
           <p className="text-center text-text-tertiary" style={{ fontSize: 11 }}>
-            All admin actions are logged. Verification temporarily disabled for testing.
+            Authorised admin accounts only. All actions are logged.
           </p>
         </form>
       </div>

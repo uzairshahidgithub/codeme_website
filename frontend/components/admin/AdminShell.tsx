@@ -3,11 +3,11 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { CodemoLogo } from '@/components/ui/CodemoLogo'
 import { useThemeStore } from '@/stores/theme'
-import type { AdminRole } from '@/lib/admin/auth'
+import type { AdminRole } from '@/lib/admin/roles'
 import { cn } from '@/lib/utils'
 
 interface AdminShellProps {
@@ -26,6 +26,7 @@ const NAV_ITEMS = [
   { id: 'events',       label: 'Events',       href: '/admin/events',           icon: '/icons/Events (Default).svg' },
   { id: 'articles',     label: 'Articles',     href: '/admin/articles',         icon: '/icons/Articles (Default).svg' },
   { id: 'courses',      label: 'Courses',      href: '/admin/courses',          icon: '/icons/eLearn (Default).svg' },
+  { id: 'categories',   label: 'Categories',   href: '/admin/categories',       icon: '/icons/Articles (Default).svg' },
   { id: 'testimonials', label: 'Testimonials', href: '/admin/testimonials',     icon: '/icons/Achievements (Default).svg' },
   { id: 'settings',     label: 'Settings',     href: '/admin/settings',         icon: '/icons/Edit Profile (Default).svg' },
   { id: 'audit',        label: 'Audit Log',    href: '/admin/audit-log',        icon: '/icons/Projects (Default).svg' },
@@ -69,6 +70,11 @@ export function AdminShell({ user, children }: AdminShellProps) {
   const toggleTheme = useThemeStore((s) => s.toggleTheme)
   const [expanded, setExpanded] = useState(true)
 
+  useEffect(() => {
+    document.body.classList.add('admin-panel')
+    return () => document.body.classList.remove('admin-panel')
+  }, [])
+
   async function signOut() {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -79,7 +85,7 @@ export function AdminShell({ user, children }: AdminShellProps) {
   const initials = user.firstName.split(/\s+/).slice(0, 2).map((s) => s[0]?.toUpperCase() ?? '').join('')
 
   return (
-    <div className="min-h-screen w-screen flex flex-col" style={{ background: 'var(--bg)' }}>
+    <div className="h-dvh w-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
       {/* Top navbar — same pill aesthetic as public navbar, but isolated component */}
       <header
         className="fixed top-[14px] left-[14px] right-[14px] z-[300] glass-nav flex items-center justify-between select-none"
@@ -207,20 +213,21 @@ export function AdminShell({ user, children }: AdminShellProps) {
         </div>
       </aside>
 
-      {/* Main content area */}
-      <main
-        id="main-content"
-        className="flex-1 overflow-y-auto overflow-x-hidden"
+      {/* Main content — fixed region so wheel/touch scroll works inside admin shell */}
+      <div
+        id="admin-main-content"
+        className="fixed overflow-y-auto overflow-x-hidden overscroll-contain"
         style={{
+          top: 105,
+          left: expanded ? 250 : 102,
+          right: 32,
+          bottom: 0,
           background: 'var(--bg)',
-          paddingTop: 110,
-          paddingInlineStart: expanded ? 250 : 102,
-          paddingInlineEnd: 32,
           paddingBottom: 32,
         }}
       >
         {children}
-      </main>
+      </div>
     </div>
   )
 }
