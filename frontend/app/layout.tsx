@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { Poppins, Instrument_Serif, Geist_Mono, Bricolage_Grotesque, Fraunces } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/components/providers/AuthProvider'
@@ -21,6 +22,15 @@ const themeInitScript = `try {
   }
   document.documentElement.classList.toggle('dark', isDark);
   document.documentElement.classList.toggle('light', !isDark);
+  var stripInjectedAttrs = function () {
+    document.querySelectorAll('[fdprocessedid]').forEach(function (node) {
+      node.removeAttribute('fdprocessedid');
+    });
+  };
+  stripInjectedAttrs();
+  var observer = new MutationObserver(stripInjectedAttrs);
+  observer.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['fdprocessedid'] });
+  setTimeout(function () { observer.disconnect(); stripInjectedAttrs(); }, 3000);
 } catch (e) {}`
 
 const poppins = Poppins({
@@ -74,15 +84,17 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const nonce = (await headers()).get('x-nonce') ?? undefined
+
   return (
     <html lang="en" className={`${poppins.variable} ${instrumentSerif.variable} ${geistMono.variable} ${bricolage.variable} ${fraunces.variable} dark`} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="font-sans" suppressHydrationWarning>
         <DevThemeProvider />

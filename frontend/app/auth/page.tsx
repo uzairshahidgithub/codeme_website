@@ -11,7 +11,7 @@ import { useSignupStore } from '@/stores/signup'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { SocialButton } from '@/components/ui/SocialButton'
-import { getOAuthOrigin, getTurnstileSiteKey } from '@/lib/utils'
+import { getOAuthOrigin, getTurnstileErrorMessage, getTurnstileSiteKey } from '@/lib/utils'
 import { Turnstile } from '@marsidev/react-turnstile'
 import Link from 'next/link'
 
@@ -191,13 +191,11 @@ export default function AuthDefaultPage() {
           </div>
         )}
 
-        {/* Turnstile Verification — required even on localhost because the
-            hosted Supabase project enforces CAPTCHA against the real secret. */}
         <div className="mt-4 flex justify-center">
           <Turnstile
             siteKey={getTurnstileSiteKey()}
             onSuccess={(token) => setTurnstileToken(token)}
-            onError={(code) => setServerError(`Security check failed to load (${code}).`)}
+            onError={(code) => setServerError(getTurnstileErrorMessage(String(code)))}
             onExpire={() => setTurnstileToken(null)}
             options={{ theme: 'dark' }}
           />

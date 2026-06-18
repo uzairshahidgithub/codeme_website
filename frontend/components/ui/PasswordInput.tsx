@@ -56,6 +56,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             ref={ref}
             id={id}
             type={visible ? 'text' : 'password'}
+            suppressHydrationWarning
             aria-describedby={error ? `${id}-error` : undefined}
             aria-invalid={error ? true : undefined}
             className={cn(
@@ -69,6 +70,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             type="button"
             onClick={() => setVisible((v) => !v)}
             aria-label={visible ? 'Hide password' : 'Show password'}
+            suppressHydrationWarning
             className="absolute right-4 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary transition-colors"
           >
             {visible ? <EyeOnIcon /> : <EyeOffIcon />}

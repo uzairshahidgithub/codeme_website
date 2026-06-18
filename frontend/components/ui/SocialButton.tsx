@@ -58,6 +58,7 @@ export function SocialButton({ provider, className, ...props }: SocialButtonProp
     <button
       type="button"
       aria-label={providerLabels[provider]}
+      suppressHydrationWarning
       className={cn(
         'w-[56px] h-[56px] rounded-full flex items-center justify-center transition-all duration-150 hover:brightness-110 hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary',
         className,

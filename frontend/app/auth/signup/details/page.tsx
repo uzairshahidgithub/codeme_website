@@ -52,8 +52,21 @@ export default function SignupStep2Page() {
     setCheckingUsername(true)
     try {
       const res = await fetch(`/api/auth/username?q=${encodeURIComponent(value)}`)
+      if (!res.ok) {
+        setUsernameAvailable(false)
+        return
+      }
+
+      const contentType = res.headers.get('content-type') ?? ''
+      if (!contentType.includes('application/json')) {
+        setUsernameAvailable(false)
+        return
+      }
+
       const json = await res.json() as { available: boolean }
       setUsernameAvailable(json.available)
+    } catch {
+      setUsernameAvailable(false)
     } finally {
       setCheckingUsername(false)
     }
@@ -88,6 +101,7 @@ export default function SignupStep2Page() {
             placeholder={field.toUpperCase()}
             inputMode="numeric"
             maxLength={field === 'yyyy' ? 4 : 2}
+            suppressHydrationWarning
             className={cn(
               'h-[56px] rounded-xl text-center text-body text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-accent-primary',
               field === 'yyyy' ? 'w-[90px]' : 'w-20',
@@ -118,6 +132,7 @@ export default function SignupStep2Page() {
           type="text"
           placeholder="Enter your username"
           autoComplete="username"
+          suppressHydrationWarning
           aria-describedby="username-hint"
           className="w-full h-[56px] rounded-xl px-6 text-body text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-accent-primary caret-accent-primary"
           style={{ background: 'var(--input-glass)', border: '1px solid var(--border)' }}

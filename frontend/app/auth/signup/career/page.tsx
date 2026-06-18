@@ -10,7 +10,7 @@ import { signupStep3Schema } from '@/lib/validations/auth'
 import { useSignupStore } from '@/stores/signup'
 import { Chip } from '@/components/ui/Chip'
 import { Button } from '@/components/ui/Button'
-import { cn, getTurnstileSiteKey } from '@/lib/utils'
+import { cn, getTurnstileErrorMessage, getTurnstileSiteKey } from '@/lib/utils'
 import { Turnstile } from '@marsidev/react-turnstile'
 
 type FormData = z.infer<typeof signupStep3Schema>
@@ -75,6 +75,7 @@ function DomainSelect({
           type="text"
           placeholder="Enter your career domain…"
           value={query}
+          suppressHydrationWarning
           onChange={(e) => {
             setQuery(e.target.value)
             onChange(e.target.value)
@@ -115,6 +116,7 @@ function DomainSelect({
             <button
               key={d}
               type="button"
+              suppressHydrationWarning
               className="w-full text-left px-5 py-3 text-text-primary hover:bg-accent-primary hover:text-white transition-colors duration-100 text-body font-sans"
               style={{ fontSize: '15px' }}
               onMouseDown={(e) => {
@@ -141,10 +143,11 @@ function DomainSelect({
 
 export default function SignupStep3Page() {
   const router = useRouter()
-  const { draft, setDomain, setStatus } = useSignupStore()
+  const { draft, setDomain, setStatus, setPassword } = useSignupStore()
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState('')
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [hasSession, setHasSession] = useState(false)
 
   // Guard: User must have completed details step before arriving here.
   useEffect(() => {
@@ -156,6 +159,21 @@ export default function SignupStep3Page() {
       router.replace('/auth/signup/details')
     }
   }, [draft.email, draft.username, draft.gender, draft.dob.yyyy, router])
+
+  useEffect(() => {
+    let cancelled = false
+
+    createClient().auth.getSession().then(({ data }) => {
+      if (cancelled) return
+      const signedIn = !!data.session
+      setHasSession(signedIn)
+      if (signedIn && draft.password) setPassword('')
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [draft.password, setPassword])
 
   const {
     handleSubmit,
@@ -169,6 +187,7 @@ export default function SignupStep3Page() {
 
   const status = watch('status')
   const domain = watch('domain', '')
+  const requiresTurnstile = !!draft.password && !hasSession
 
   async function onSubmit(data: FormData) {
     // Only the password-fallback branch calls signUp(), which the hosted
@@ -199,7 +218,7 @@ export default function SignupStep3Page() {
 
     let error;
 
-    if (current.password) {
+    if (current.password && !hasSession) {
       // User came through the password fallback flow — they are not authenticated yet.
       const res = await supabase.auth.signUp({
         email: current.email,
@@ -283,15 +302,17 @@ export default function SignupStep3Page() {
 
         {/* Turnstile — required even on localhost because the hosted Supabase
             project enforces CAPTCHA on signUp() against the real secret. */}
-        <div className="mt-6 flex justify-center">
+        {requiresTurnstile && (
+          <div className="mt-6 flex justify-center">
           <Turnstile
             siteKey={getTurnstileSiteKey()}
             onSuccess={(token) => setTurnstileToken(token)}
-            onError={(code) => setSendError(`Security check failed to load (${code}).`)}
+            onError={(code) => setSendError(getTurnstileErrorMessage(String(code)))}
             onExpire={() => setTurnstileToken(null)}
             options={{ theme: 'dark' }}
           />
-        </div>
+          </div>
+        )}
 
         {/* Continue */}
         <div className="flex justify-center mt-8">
@@ -299,8 +320,8 @@ export default function SignupStep3Page() {
             variant="primary"
             className="w-[200px]"
             onClick={handleSubmit(onSubmit)}
-            disabled={sending || (!turnstileToken && !!useSignupStore.getState().draft.password)}
-            aria-busy={sending || (!turnstileToken && !!useSignupStore.getState().draft.password)}
+            disabled={sending || (!turnstileToken && requiresTurnstile)}
+            aria-busy={sending || (!turnstileToken && requiresTurnstile)}
           >
             {sending ? 'Sending code…' : (!turnstileToken && !!useSignupStore.getState().draft.password ? 'Verifying security…' : 'Continue')}
           </Button>

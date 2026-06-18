@@ -28,14 +28,47 @@ export function getOAuthOrigin(): string {
   return window.location.origin
 }
 
+/** Cloudflare dummy site key — always passes, works on any hostname (incl. localhost). */
+export const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA'
+
 /**
- * Returns the appropriate Cloudflare Turnstile Site Key.
- * We must use the real site key even on localhost because Supabase 
- * strictly enforces valid tokens against the production secret key.
- * Ensure localhost is whitelisted in your Cloudflare dashboard!
+ * Returns the Cloudflare Turnstile site key for the current environment.
+ *
+ * In development we default to Cloudflare's test site key so the widget loads
+ * on localhost without error 110200 ("domain not authorized"). Production site
+ * keys only work locally after adding `localhost` under Cloudflare Turnstile →
+ * Hostname Management, then setting `NEXT_PUBLIC_TURNSTILE_USE_PRODUCTION_IN_DEV=true`.
+ *
+ * Supabase Auth verifies captcha tokens with the production Turnstile secret,
+ * so OTP/login in local dev requires that production-in-dev flag once localhost
+ * is whitelisted in Cloudflare.
  */
 export function getTurnstileSiteKey(): string {
-  return process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'
+  const productionKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+
+  if (process.env.NODE_ENV === 'development') {
+    if (
+      process.env.NEXT_PUBLIC_TURNSTILE_USE_PRODUCTION_IN_DEV === 'true' &&
+      productionKey
+    ) {
+      return productionKey
+    }
+    return TURNSTILE_TEST_SITE_KEY
+  }
+
+  return productionKey || TURNSTILE_TEST_SITE_KEY
+}
+
+/** Maps Turnstile client error codes to actionable messages. */
+export function getTurnstileErrorMessage(code: string): string {
+  if (code === '110200') {
+    return (
+      'Security check failed: localhost is not authorized for this Turnstile key. ' +
+      'Add localhost under Cloudflare Turnstile → Hostname Management, then set ' +
+      'NEXT_PUBLIC_TURNSTILE_USE_PRODUCTION_IN_DEV=true in frontend/.env.local and restart the dev server.'
+    )
+  }
+  return `Security check failed to load (${code}).`
 }
 
 /* ────────────────────────────────────────────────────────────

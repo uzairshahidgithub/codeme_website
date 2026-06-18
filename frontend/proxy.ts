@@ -36,11 +36,20 @@ function isMobileUA(request: NextRequest): boolean {
 }
 
 function addSecurityHeaders(response: NextResponse, nonce: string): NextResponse {
+  if (process.env.NODE_ENV === 'development') {
+    response.headers.set('X-Frame-Options', 'DENY')
+    response.headers.set('X-Content-Type-Options', 'nosniff')
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+    response.headers.set('X-DNS-Prefetch-Control', 'off')
+    response.headers.set('X-Nonce', nonce)
+
+    return response
+  }
+
   const csp = [
     `default-src 'self'`,
-    `script-src 'self' 'nonce-${nonce}' ${
-      process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ''
-    } https://challenges.cloudflare.com`,
+    `script-src 'self' 'nonce-${nonce}' https://challenges.cloudflare.com`,
     `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
     `font-src 'self' https://fonts.gstatic.com`,
     `img-src 'self' data: blob: https:`,
@@ -124,9 +133,14 @@ export async function proxy(request: NextRequest) {
   const isProtected = PROTECTED_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`),
   )
+  const isApiRoute = pathname === '/api' || pathname.startsWith('/api/')
   const isAuthRoute = AUTH_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`),
   )
+
+  if (isApiRoute) {
+    return addSecurityHeaders(supabaseResponse, nonce)
+  }
 
   if (isProtected && !user) {
     const loginUrl = new URL('/auth', request.url)

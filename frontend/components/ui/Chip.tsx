@@ -26,6 +26,7 @@ export function Chip({ selected = false, label, className, ...props }: ChipProps
       type="button"
       role="radio"
       aria-checked={selected}
+      suppressHydrationWarning
       className={cn(
         'h-10 px-5 rounded-full text-[13.5px] font-medium transition-colors duration-150',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary',
