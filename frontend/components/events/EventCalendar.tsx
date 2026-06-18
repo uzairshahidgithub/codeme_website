@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { RRule, RRuleSet, rrulestr } from 'rrule'
 import type { EventRow } from '@/lib/schemas/events'
-import { CATEGORY_COLOURS } from '@/lib/schemas/events'
+import { getCategoryColour } from '@/lib/schemas/events'
 import { CategoryBadge, ModeBadge, formatTime } from './EventBadges'
 import { EventDetailPopup } from './EventDetailPopup'
 
@@ -182,7 +182,7 @@ export function EventCalendar({ events, isAuthed, registeredIds }: Props) {
                           key={j}
                           style={{
                             display: 'inline-block', width: 5, height: 5, borderRadius: 999,
-                            background: isSelected ? '#fff' : CATEGORY_COLOURS[o.event.category],
+                            background: isSelected ? '#fff' : getCategoryColour(o.event.category),
                           }}
                         />
                       ))}
@@ -200,7 +200,7 @@ export function EventCalendar({ events, isAuthed, registeredIds }: Props) {
           <div className="flex flex-wrap items-center gap-4 mt-6 pt-5" style={{ borderTop: '1px solid var(--border)' }}>
             {(['webinar', 'bootcamp', 'workshop', 'hackathon'] as const).map((c) => (
               <div key={c} className="flex items-center gap-2 capitalize text-text-tertiary" style={{ fontSize: 12 }}>
-                <span style={{ width: 7, height: 7, borderRadius: 999, background: CATEGORY_COLOURS[c], display: 'inline-block' }} />
+                <span style={{ width: 7, height: 7, borderRadius: 999, background: getCategoryColour(c), display: 'inline-block' }} />
                 {c}
               </div>
             ))}
@@ -264,7 +264,7 @@ export function EventCalendar({ events, isAuthed, registeredIds }: Props) {
                     >
                       <span style={{
                         width: 4, alignSelf: 'stretch', borderRadius: 4,
-                        background: CATEGORY_COLOURS[o.event.category],
+                        background: getCategoryColour(o.event.category),
                       }} />
                       <div className="flex-1 min-w-0">
                         <div className="text-text-primary truncate" style={{ fontSize: 15, fontWeight: 600 }}>

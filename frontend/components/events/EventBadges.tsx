@@ -1,10 +1,10 @@
-import { CATEGORY_COLOURS, CATEGORY_LABELS, type EventCategory, type EventMode } from '@/lib/schemas/events'
+import { getCategoryColour, getCategoryLabel, type EventMode } from '@/lib/schemas/events'
 
 export function CategoryBadge({ category, size = 'md' }: { category: string; size?: 'sm' | 'md' }) {
   const fontSize = size === 'sm' ? 11 : 12
   const padding = size === 'sm' ? '4px 10px' : '5px 12px'
-  const colour = CATEGORY_COLOURS[category as EventCategory] ?? 'var(--blue)'
-  const label = CATEGORY_LABELS[category as EventCategory] ?? (category.charAt(0).toUpperCase() + category.slice(1))
+  const colour = getCategoryColour(category)
+  const label = getCategoryLabel(category)
   return (
     <span
       style={{

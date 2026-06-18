@@ -92,3 +92,12 @@ export const CATEGORY_LABELS: Record<EventCategory, string> = {
   conference: 'Conference',
   other:      'Other',
 }
+
+/** Safe lookup — category is a free-form slug in the DB; falls back for admin-defined topics. */
+export function getCategoryColour(category: string): string {
+  return CATEGORY_COLOURS[category as EventCategory] ?? '#2D7FF9'
+}
+
+export function getCategoryLabel(category: string): string {
+  return CATEGORY_LABELS[category as EventCategory] ?? (category.charAt(0).toUpperCase() + category.slice(1))
+}
