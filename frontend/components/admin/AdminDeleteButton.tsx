@@ -4,11 +4,12 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface Props {
+  id: string
   label: string
-  onDelete: () => Promise<void>
+  deleteAction: (id: string) => Promise<void>
 }
 
-export function AdminDeleteButton({ label, onDelete }: Props) {
+export function AdminDeleteButton({ id, label, deleteAction }: Props) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
 
@@ -16,7 +17,7 @@ export function AdminDeleteButton({ label, onDelete }: Props) {
     if (!confirm(`Delete ${label}? This cannot be undone.`)) return
     setPending(true)
     try {
-      await onDelete()
+      await deleteAction(id)
       router.refresh()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Delete failed')

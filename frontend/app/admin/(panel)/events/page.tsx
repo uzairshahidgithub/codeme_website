@@ -98,7 +98,7 @@ export default async function AdminEventsPage() {
               <div className="flex gap-2 items-center">
                 <Link href={`/admin/events/${ev.id}/edit`} className="text-text-link" style={{ fontSize: 13 }}>Edit</Link>
                 <Link href={`/admin/events/${ev.id}/attendance`} className="text-text-link" style={{ fontSize: 13 }}>Attendance</Link>
-                <AdminDeleteButton label={ev.title} onDelete={() => deleteEventAction(ev.id)} />
+                <AdminDeleteButton id={ev.id} label={ev.title} deleteAction={deleteEventAction} />
               </div>
             </div>
           )

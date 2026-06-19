@@ -83,7 +83,7 @@ export function CategoryManager({ initial }: Props) {
             <span className="text-text-secondary text-sm">{row.sort_order}</span>
             <div className="flex gap-3">
               <button type="button" onClick={() => editRow(row)} className="text-text-link text-sm">Edit</button>
-              <AdminDeleteButton label={row.label} onDelete={() => deleteCategoryAction(row.id)} />
+              <AdminDeleteButton id={row.id} label={row.label} deleteAction={deleteCategoryAction} />
             </div>
           </div>
         ))}

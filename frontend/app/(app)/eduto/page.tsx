@@ -6,6 +6,8 @@ import { useEffect, useState, useRef } from 'react';
 import Script from 'next/script';
 import { Clock, User, Globe, Zap, Star, Signal, X, BookOpen, Download, Share2, Calendar, FileText, Mail, MessageCircle, Copy, CheckCircle, ArrowLeft, Printer, Trash2 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
+import { createClient } from '@/lib/supabase/client';
+import { COURSE_PUBLIC_SELECT, toEdutoCourse, edutoCategoriesFromCourses, type PublicCourseRow } from '@/lib/courses/public';
 
 // ----------------------------------------------------------------------
 // 1. Types & Global Declarations
@@ -54,7 +56,7 @@ type EnrollmentRecord = {
   date: string;
 };
 
-const COURSES: Course[] = [
+const FALLBACK_COURSES: Course[] = [
   { id: 'C01', title: 'React Masterclass', category: 'Frontend', duration: '8 Weeks', origPrice: 6000, price: 4000, rating: '5.0', mentor: 'Sarah J.', feature: 'Flash Sale', level: 'Intermediate', description: 'Master React by building scalable web applications. Learn hooks, state management, and modern component architecture.', shortDescription: 'Master React from scratch and build scalable web apps.', image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&w=800&q=80' },
   { id: 'C02', title: 'Node.js Backend', category: 'Backend', duration: '6 Weeks', origPrice: 5000, price: 3500, rating: '4.8', mentor: 'Mike R.', feature: 'Trending', level: 'Intermediate', description: 'Build robust backend architectures with Node.js and Express. Focus on REST APIs, databases, and authentication.', shortDescription: 'Build robust backend architectures with Node.js.', image: 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?auto=format&fit=crop&w=800&q=80' },
   { id: 'C03', title: 'Kubernetes Deep Dive', category: 'DevOps', duration: '4 Weeks', origPrice: 8000, price: 5000, rating: '5.0', mentor: 'Alex W.', feature: 'New', level: 'Advanced', description: 'Master container orchestration and scaling. Learn to deploy, manage, and optimize enterprise-level clusters.', shortDescription: 'Master container orchestration and scaling.', image: 'https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?auto=format&fit=crop&w=800&q=80' },
@@ -76,7 +78,7 @@ const HERO_IMAGES = [
   'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?ixlib=rb-4.0.3&auto=format&fit=crop&w=2850&q=80'
 ];
 
-const CATEGORIES = ['All', 'Frontend', 'Backend', 'DevOps', 'Design', 'Data Science', 'Mobile'];
+const DEFAULT_CATEGORIES = ['All', 'Frontend', 'Backend', 'DevOps', 'Design', 'Data Science', 'Mobile'];
 
 // ----------------------------------------------------------------------
 // 2. Main Component
@@ -99,14 +101,36 @@ export default function EdutoPage() {
   const [copied, setCopied] = useState(false);
   const [pdfFallback, setPdfFallback] = useState(false);
   const [mobileCatOpen, setMobileCatOpen] = useState(false);
+  const [courses, setCourses] = useState<Course[]>(FALLBACK_COURSES);
+  const [categoryList, setCategoryList] = useState<string[]>(DEFAULT_CATEGORIES);
   const pathwayRef = useRef<HTMLDivElement>(null);
 
-  const featuredCourses = COURSES.filter(c => c.feature).slice(0, 4);
-  const filteredCourses = category === 'All' ? COURSES : COURSES.filter(c => c.category === category);
+  const featuredCourses = courses.filter(c => c.feature).slice(0, 4);
+  const filteredCourses = category === 'All' ? courses : courses.filter(c => c.category === category);
   
   const ITEMS_PER_PAGE = 8;
   const totalPages = Math.ceil(filteredCourses.length / ITEMS_PER_PAGE) || 1;
   const paginatedCourses = filteredCourses.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCourses() {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('courses')
+        .select(COURSE_PUBLIC_SELECT)
+        .eq('status', 'published')
+        .order('is_featured', { ascending: false })
+        .order('featured_sort_order', { ascending: true })
+        .order('enrolled_count', { ascending: false });
+      if (cancelled || error || !data?.length) return;
+      const mapped = (data as PublicCourseRow[]).map(toEdutoCourse);
+      setCourses(mapped);
+      setCategoryList(edutoCategoriesFromCourses(mapped));
+    }
+    void loadCourses();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -1201,7 +1225,7 @@ export default function EdutoPage() {
             {/* Desktop Categories */}
             <div className="eduto-desktop-categories" style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
               <hu-tabs>
-                {CATEGORIES.map(cat => (
+                {categoryList.map(cat => (
                   <hu-tab 
                     key={cat} 
                     active={category === cat ? true : undefined}
@@ -1252,7 +1276,7 @@ export default function EdutoPage() {
                     zIndex: 20,
                     boxShadow: 'var(--eduto-shadow-sm, 0 4px 12px rgba(0,0,0,0.1))'
                   }}>
-                    {CATEGORIES.filter(c => c !== 'All').map(cat => (
+                    {categoryList.filter(c => c !== 'All').map(cat => (
                       <button
                         key={cat}
                         onClick={() => {

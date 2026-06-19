@@ -1,5 +1,5 @@
 import { unstable_cache } from 'next/cache'
-import { createPublicClient } from '@/lib/supabase/public'
+import { fetchFeaturedCourses } from '@/lib/courses/public'
 import { CourseDeck, MobileCourseList } from './CourseDeck'
 
 export interface CourseItem {
@@ -14,22 +14,9 @@ export interface CourseItem {
   description?: string | null
 }
 
-const fetchCourses = unstable_cache(
-  async (): Promise<CourseItem[]> => {
-    const supabase = createPublicClient()
-    const { data, error } = await supabase
-      .from('courses')
-      .select('id, title, level, instructor_name, duration_hours, enrolled_count, thumbnail_url, tags, description')
-      .eq('status', 'published')
-      .order('enrolled_count', { ascending: false })
-      .limit(6)
-    if (error) {
-      console.warn('courses fetch failed:', error.message)
-      return []
-    }
-    return (data ?? []) as CourseItem[]
-  },
-  ['home:courses'],
+const getHomeCourses = unstable_cache(
+  async () => fetchFeaturedCourses(6),
+  ['home:courses:featured'],
   { revalidate: 300, tags: ['courses'] },
 )
 
@@ -54,7 +41,7 @@ export function CourseSkeletonStrip() {
 }
 
 export async function CourseHighlights() {
-  const fetched = await fetchCourses()
+  const fetched = await getHomeCourses()
   const courses = fetched.length > 0 ? fetched : FALLBACK
   return (
     <>

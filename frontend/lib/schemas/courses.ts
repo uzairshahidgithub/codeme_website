@@ -18,6 +18,14 @@ export const CourseSchema = z.object({
   category: z.string().min(2).max(40).optional().or(z.literal('')),
   tags: z.array(z.string().min(1).max(30)).max(12).default([]),
   status: CourseStatusEnum.default('draft'),
+  is_featured: z.boolean().default(false),
+  featured_label: z.string().max(40).optional().or(z.literal('')),
+  featured_sort_order: z.number().int().min(0).max(999).default(0),
+  price: z.number().min(0).default(0),
+  original_price: z.number().min(0).nullable().optional(),
+  rating: z.number().min(0).max(5).default(4.5),
+  duration_label: z.string().max(40).optional().or(z.literal('')),
+  short_description: z.string().max(300).optional().or(z.literal('')),
 })
 
 export type CourseInput = z.infer<typeof CourseSchema>

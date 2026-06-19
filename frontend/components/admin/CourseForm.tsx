@@ -16,13 +16,21 @@ export function CourseForm({ mode, initial }: Props) {
   const router = useRouter()
   const [title, setTitle] = useState(initial?.title ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
+  const [shortDescription, setShortDescription] = useState(initial?.short_description ?? '')
   const [thumbnailUrl, setThumbnailUrl] = useState(initial?.thumbnail_url ?? '')
   const [level, setLevel] = useState<CourseLevel>(initial?.level ?? 'beginner')
   const [instructorName, setInstructorName] = useState(initial?.instructor_name ?? '')
   const [durationHours, setDurationHours] = useState(String(initial?.duration_hours ?? 1))
+  const [durationLabel, setDurationLabel] = useState(initial?.duration_label ?? '')
   const [enrolledCount, setEnrolledCount] = useState(String(initial?.enrolled_count ?? 0))
   const [category, setCategory] = useState(initial?.category ?? '')
   const [tagsText, setTagsText] = useState((initial?.tags ?? []).join(', '))
+  const [isFeatured, setIsFeatured] = useState(initial?.is_featured ?? false)
+  const [featuredLabel, setFeaturedLabel] = useState(initial?.featured_label ?? 'Featured')
+  const [featuredSortOrder, setFeaturedSortOrder] = useState(String(initial?.featured_sort_order ?? 0))
+  const [price, setPrice] = useState(String(initial?.price ?? 0))
+  const [originalPrice, setOriginalPrice] = useState(initial?.original_price != null ? String(initial.original_price) : '')
+  const [rating, setRating] = useState(String(initial?.rating ?? 4.5))
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -31,14 +39,22 @@ export function CourseForm({ mode, initial }: Props) {
     const payload: CourseInput = {
       title,
       description,
+      short_description: shortDescription || '',
       thumbnail_url: thumbnailUrl || '',
       level,
       instructor_name: instructorName,
       duration_hours: Number(durationHours) || 1,
+      duration_label: durationLabel || '',
       enrolled_count: Number(enrolledCount) || 0,
       category: category || '',
       tags: tagsText.split(',').map((t) => t.trim()).filter(Boolean),
       status,
+      is_featured: isFeatured,
+      featured_label: isFeatured ? featuredLabel : '',
+      featured_sort_order: Number(featuredSortOrder) || 0,
+      price: Number(price) || 0,
+      original_price: originalPrice ? Number(originalPrice) : null,
+      rating: Number(rating) || 4.5,
     }
 
     const parsed = CourseSchema.safeParse(payload)
@@ -71,6 +87,9 @@ export function CourseForm({ mode, initial }: Props) {
       <Field label="Description" required>
         <textarea value={description} onChange={(e) => setDescription(e.target.value)} required className="codemo-input" style={{ minHeight: 120, resize: 'vertical', padding: '14px 16px' }} />
       </Field>
+      <Field label="Short description (cards)">
+        <input type="text" value={shortDescription} onChange={(e) => setShortDescription(e.target.value)} placeholder="One line for homepage / Eduto cards" className="codemo-input" />
+      </Field>
       <Field label="Instructor" required>
         <input type="text" value={instructorName} onChange={(e) => setInstructorName(e.target.value)} required className="codemo-input" />
       </Field>
@@ -85,12 +104,28 @@ export function CourseForm({ mode, initial }: Props) {
         <Field label="Duration (hours)" required>
           <input type="number" min={1} value={durationHours} onChange={(e) => setDurationHours(e.target.value)} className="codemo-input" />
         </Field>
+        <Field label="Duration label (Eduto)">
+          <input type="text" value={durationLabel} onChange={(e) => setDurationLabel(e.target.value)} placeholder="e.g. 8 Weeks" className="codemo-input" />
+        </Field>
+      </div>
+      <div className="grid md:grid-cols-2 gap-4">
         <Field label="Enrolled count">
           <input type="number" min={0} value={enrolledCount} onChange={(e) => setEnrolledCount(e.target.value)} className="codemo-input" />
         </Field>
+        <Field label="Rating (0–5)">
+          <input type="number" min={0} max={5} step={0.1} value={rating} onChange={(e) => setRating(e.target.value)} className="codemo-input" />
+        </Field>
+      </div>
+      <div className="grid md:grid-cols-2 gap-4">
+        <Field label="Price">
+          <input type="number" min={0} value={price} onChange={(e) => setPrice(e.target.value)} className="codemo-input" />
+        </Field>
+        <Field label="Original price (optional)">
+          <input type="number" min={0} value={originalPrice} onChange={(e) => setOriginalPrice(e.target.value)} placeholder="Strike-through price on Eduto" className="codemo-input" />
+        </Field>
       </div>
       <Field label="Category slug">
-        <input type="text" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. ai, security" className="codemo-input" />
+        <input type="text" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Frontend, AI, Security" className="codemo-input" />
       </Field>
       <Field label="Tags (comma-separated)">
         <input type="text" value={tagsText} onChange={(e) => setTagsText(e.target.value)} placeholder="AI, Python, Web" className="codemo-input" />
@@ -98,6 +133,32 @@ export function CourseForm({ mode, initial }: Props) {
       <Field label="Thumbnail URL">
         <input type="url" value={thumbnailUrl} onChange={(e) => setThumbnailUrl(e.target.value)} placeholder="https://…" className="codemo-input" />
       </Field>
+
+      <div
+        className="flex flex-col gap-4 rounded-xl p-4"
+        style={{ border: '1px solid var(--border)', background: 'var(--bg-surface)' }}
+      >
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={isFeatured}
+            onChange={(e) => setIsFeatured(e.target.checked)}
+            className="h-4 w-4 accent-[var(--accent-primary)]"
+          />
+          <span className="text-text-primary text-sm font-medium">Feature on homepage &amp; Eduto</span>
+        </label>
+        {isFeatured && (
+          <div className="grid md:grid-cols-2 gap-4">
+            <Field label="Featured badge label">
+              <input type="text" value={featuredLabel} onChange={(e) => setFeaturedLabel(e.target.value)} placeholder="Flash Sale, Trending, New…" className="codemo-input" />
+            </Field>
+            <Field label="Featured sort order">
+              <input type="number" min={0} value={featuredSortOrder} onChange={(e) => setFeaturedSortOrder(e.target.value)} className="codemo-input" />
+            </Field>
+          </div>
+        )}
+      </div>
+
       {error && <p className="text-text-error text-sm">{error}</p>}
       <div className="flex flex-col gap-3">
         <button type="button" onClick={() => submit('draft')} disabled={submitting} className="codemo-input" style={{ height: 52, borderRadius: 999 }}>Save as Draft</button>

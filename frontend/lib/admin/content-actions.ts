@@ -87,6 +87,10 @@ export async function upsertCourseAction(
     instructor_avatar_url: parsed.data.instructor_avatar_url || null,
     category: parsed.data.category || null,
     tags: parsed.data.tags ?? [],
+    featured_label: parsed.data.is_featured ? (parsed.data.featured_label?.trim() || 'Featured') : null,
+    original_price: parsed.data.original_price ?? null,
+    duration_label: parsed.data.duration_label?.trim() || null,
+    short_description: parsed.data.short_description?.trim() || null,
   }
 
   const supabase = adminDb()
@@ -98,7 +102,23 @@ export async function upsertCourseAction(
 
   revalidatePath('/admin/courses')
   revalidatePath('/')
+  revalidatePath('/eduto')
   return { id: result.data.id }
+}
+
+export async function toggleCourseFeaturedAction(id: string, featured: boolean): Promise<void> {
+  await assertAdminSession()
+  const { error } = await adminDb()
+    .from('courses')
+    .update({
+      is_featured: featured,
+      featured_label: featured ? 'Featured' : null,
+    })
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+  revalidatePath('/admin/courses')
+  revalidatePath('/')
+  revalidatePath('/eduto')
 }
 
 export async function deleteCourseAction(id: string): Promise<void> {
@@ -107,6 +127,7 @@ export async function deleteCourseAction(id: string): Promise<void> {
   if (error) throw new Error(error.message)
   revalidatePath('/admin/courses')
   revalidatePath('/')
+  revalidatePath('/eduto')
 }
 
 export async function upsertCategoryAction(

@@ -10,7 +10,7 @@ export default async function EditCoursePage({ params }: PageProps) {
   const supabase = createAdminClient()
   const { data: row } = await supabase
     .from('courses')
-    .select('id, title, description, thumbnail_url, level, instructor_name, instructor_avatar_url, duration_hours, enrolled_count, category, tags, status')
+    .select('id, title, description, short_description, thumbnail_url, level, instructor_name, instructor_avatar_url, duration_hours, duration_label, enrolled_count, category, tags, status, is_featured, featured_label, featured_sort_order, price, original_price, rating')
     .eq('id', id)
     .single()
 
@@ -29,15 +29,23 @@ export default async function EditCoursePage({ params }: PageProps) {
           id: course.id,
           title: course.title,
           description: course.description,
+          short_description: course.short_description ?? '',
           thumbnail_url: course.thumbnail_url ?? '',
           level: course.level,
           instructor_name: course.instructor_name,
           instructor_avatar_url: course.instructor_avatar_url ?? '',
           duration_hours: course.duration_hours,
+          duration_label: course.duration_label ?? '',
           enrolled_count: course.enrolled_count,
           category: course.category ?? '',
           tags: course.tags ?? [],
           status: course.status,
+          is_featured: course.is_featured ?? false,
+          featured_label: course.featured_label ?? '',
+          featured_sort_order: course.featured_sort_order ?? 0,
+          price: Number(course.price ?? 0),
+          original_price: course.original_price != null ? Number(course.original_price) : null,
+          rating: Number(course.rating ?? 4.5),
         }}
       />
     </div>
