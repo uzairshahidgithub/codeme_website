@@ -150,7 +150,31 @@ export async function updateUserRoleAction(userId: string, role: 'member' | 'mod
     throw new Error('Only super_admin can change user roles.')
   }
 
+  const { data: targetProfile } = await adminDb()
+    .from('profiles')
+    .select('first_name, username')
+    .eq('id', userId)
+    .maybeSingle()
+
   const { error } = await adminDb().from('profiles').update({ role }).eq('id', userId)
   if (error) throw new Error(error.message)
+
+  if (role === 'admin' || role === 'super_admin') {
+    try {
+      const { data: authUser } = await adminDb().auth.admin.getUserById(userId)
+      const email = authUser.user?.email
+      if (email) {
+        const { adminAccessGrantedEmail } = await import('@/lib/mailjet/templates')
+        const { sendMailjetEmail, isMailjetConfigured } = await import('@/lib/mailjet/server')
+        if (isMailjetConfigured()) {
+          const tpl = adminAccessGrantedEmail(targetProfile?.first_name || targetProfile?.username || 'Admin')
+          await sendMailjetEmail({ to: email, subject: tpl.subject, html: tpl.html })
+        }
+      }
+    } catch (e) {
+      console.warn('[admin] admin access email failed:', e)
+    }
+  }
+
   revalidatePath('/admin/users')
 }

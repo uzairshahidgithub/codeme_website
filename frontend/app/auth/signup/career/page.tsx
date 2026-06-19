@@ -245,11 +245,13 @@ export default function SignupStep3Page() {
       return
     }
 
-    // TEMPORARY: email confirmation is disabled until SMTP is configured
-    // (See supabase/config.toml [auth.email]). signUp() returns a live session
-    // immediately, so we can skip /auth/signup/verify and land on the success
-    // screen. Restore the verify route once email confirmation is re-enabled.
     router.refresh()
+
+    if (current.password && !hasSession) {
+      router.replace(`/auth/signup/verify?email=${encodeURIComponent(current.email)}`)
+      return
+    }
+
     router.replace('/auth/signup/success')
   }
 

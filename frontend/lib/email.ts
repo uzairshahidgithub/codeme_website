@@ -14,20 +14,35 @@ interface SendEmailResult {
 }
 
 /**
- * Sends a transactional email via the `send-email` Edge Function (self-hosted Postal SMTP backend).
+ * Sends a transactional email via Mailjet.
  *
- * Supabase Auth's own emails (signup confirmation, password recovery, magic link,
- * email change) are sent automatically by Supabase via the configured custom SMTP
- * relay — this helper is only for app-level emails we trigger ourselves
- * (e.g. welcome message, account-event notifications).
+ * Tries the Next.js `/api/email/send` route first (server-side Mailjet).
+ * Falls back to the `send-email` Edge Function when running in the browser
+ * without a same-origin API route.
  *
- * Caller must be authenticated; the function rejects unauthenticated requests.
+ * Supabase Auth emails (signup confirmation, password recovery, magic link,
+ * OTP codes) are sent automatically by Supabase through Mailjet SMTP configured
+ * in the Supabase Dashboard — not through this helper.
  */
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
   const supabase = createClient()
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) {
     return { data: null, error: 'Not authenticated', meta: {} }
+  }
+
+  const apiRes = await fetch('/api/email/send', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  })
+
+  if (apiRes.ok) {
+    const payload = (await apiRes.json()) as SendEmailResult
+    return payload
   }
 
   const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-email`

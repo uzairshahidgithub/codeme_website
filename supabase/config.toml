@@ -50,13 +50,10 @@ password_requirements = "lower_upper_letters_digits"
 
 [auth.email]
 enable_signup = true
-# TEMPORARY: email confirmation and email-change verification disabled until
-# the self-hosted Postal SMTP relay is provisioned (see smtp/setup-guide.md)
-# and credentials are pasted into Supabase Auth → SMTP. Flip both back to
-# `true` once `noreply@codemoteam.org` is sending via Postal.
-# See docs/SUPABASE.md → "Auth → SMTP (custom)".
-double_confirm_changes = false
-enable_confirmations = false
+# Mailjet SMTP relay — configure in Supabase Dashboard (Auth → SMTP Settings).
+# See supabase/.smtp.env.example for Mailjet credentials.
+double_confirm_changes = true
+enable_confirmations = true
 secure_password_change = true
 max_frequency = "5m"
 

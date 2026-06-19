@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts'
-import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
 import { corsHeaders, envelope, requireAdmin, audit } from '../_shared/admin.ts'
+import { sendEmail } from '../_shared/mailjet.ts'
 
 const bodySchema = z.object({
   event_id: z.string().uuid(),
@@ -44,19 +44,6 @@ serve(async (req) => {
   const { data: { user }, error: userErr } = await auth.serviceClient.auth.admin.getUserById(user_id)
   if (userErr || !user?.email) return envelope(origin, 404, null, 'Attendee email not found')
 
-  const host = Deno.env.get('SMTP_HOST')
-  const port = Number(Deno.env.get('SMTP_PORT') ?? 587)
-  const username = Deno.env.get('SMTP_USER')
-  const password = Deno.env.get('SMTP_PASS')
-  const from = Deno.env.get('EMAIL_FROM') ?? 'noreply@codemoteam.org'
-  if (!host || !username || !password) {
-    return envelope(origin, 500, null, 'SMTP not configured')
-  }
-
-  const client = new SMTPClient({
-    connection: { hostname: host, port, tls: port === 465, auth: { username, password } },
-  })
-
   const html = `
     <!doctype html>
     <html><body style="margin:0;padding:0;background:#0a0a0a;font-family:Helvetica,Arial,sans-serif;color:#f5f5f5;">
@@ -85,16 +72,13 @@ serve(async (req) => {
   `
 
   try {
-    await client.send({
-      from,
+    await sendEmail({
       to: user.email,
       subject: `Your Certificate — ${eventTitle}`,
-      content: 'auto',
       html,
     })
-    await client.close()
   } catch (e) {
-    console.error('send-cert-email: smtp send failed', e)
+    console.error('send-cert-email: send failed', e)
     return envelope(origin, 502, null, 'Failed to send email')
   }
 
