@@ -12,6 +12,8 @@ import { CodemoLogo } from '@/components/ui/CodemoLogo'
 import { getTurnstileErrorMessage, getTurnstileSiteKey } from '@/lib/utils'
 import { Turnstile } from '@marsidev/react-turnstile'
 
+import { ADMIN_CREDS_OK_KEY, ADMIN_VERIFY_EMAIL_KEY } from '@/lib/admin/login-keys'
+
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
   password: z.string().min(8, 'Password too short'),
@@ -36,7 +38,9 @@ function AdminAuthInner() {
   const denied = params.get('denied') === '1'
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [serverError, setServerError] = useState<string | null>(denied ? 'Access denied. This account does not have admin privileges.' : null)
+  const [serverError, setServerError] = useState<string | null>(
+    denied ? 'Access denied. This account does not have admin privileges.' : null,
+  )
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
@@ -59,7 +63,7 @@ function AdminAuthInner() {
       options: { captchaToken: turnstileToken },
     })
 
-    if (error || !signIn.session || !signIn.user) {
+    if (error || !signIn.user) {
       setSubmitting(false)
       setServerError('Invalid credentials.')
       setTurnstileToken(null)
@@ -80,8 +84,16 @@ function AdminAuthInner() {
       return
     }
 
-    router.refresh()
-    router.replace('/admin')
+    await supabase.auth.signOut()
+
+    sessionStorage.setItem(ADMIN_VERIFY_EMAIL_KEY, data.email)
+    sessionStorage.setItem(
+      ADMIN_CREDS_OK_KEY,
+      JSON.stringify({ email: data.email, exp: Date.now() + 5 * 60 * 1000 }),
+    )
+
+    setSubmitting(false)
+    router.push(`/admin/auth/verify?email=${encodeURIComponent(data.email)}`)
   }
 
   const inputCls = 'w-full h-[48px] rounded-xl px-4 text-text-primary placeholder:text-text-tertiary outline-none focus:ring-2 focus:ring-accent-primary caret-accent-primary'
@@ -110,7 +122,7 @@ function AdminAuthInner() {
             Admin Access
           </h1>
           <p className="text-text-muted mt-1" style={{ fontSize: 14 }}>
-            Authorised personnel only.
+            Step 1 of 2 — verify your credentials, then enter the code sent to your email.
           </p>
         </div>
 
@@ -172,7 +184,7 @@ function AdminAuthInner() {
             aria-busy={submitting || !turnstileToken}
             onClick={handleSubmit(onSubmit)}
           >
-            {submitting ? 'Signing in…' : (!turnstileToken ? 'Verifying security…' : 'Sign In')}
+            {submitting ? 'Checking…' : (!turnstileToken ? 'Verifying security…' : 'Continue to verification')}
           </Button>
 
           <p className="text-center text-text-tertiary" style={{ fontSize: 11 }}>

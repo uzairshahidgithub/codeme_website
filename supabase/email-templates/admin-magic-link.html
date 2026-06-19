@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Your Codemo admin sign-in code</title>
+</head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:Helvetica,Arial,sans-serif;color:#f5f5f5;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0a0a0a;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="max-width:560px;background:#141414;border:1px solid #2a2a2a;border-radius:16px;overflow:hidden;">
+          <tr>
+            <td style="padding:32px 32px 16px 32px;">
+              <p style="margin:0 0 8px 0;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#2D7FF9;">Codemo Teams · Admin</p>
+              <h1 style="margin:0;font-size:24px;font-weight:600;color:#ffffff;line-height:1.3;">Admin sign-in code</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 32px 24px 32px;">
+              <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#d9d9d9;">
+                Use this code to complete admin sign-in for <strong style="color:#ffffff;">{{ .Email }}</strong>.
+              </p>
+              <p style="margin:0 0 24px 0;font-size:36px;font-weight:700;letter-spacing:0.2em;color:#ffffff;text-align:center;">
+                {{ .Token }}
+              </p>
+              <p style="margin:0;font-size:13px;line-height:1.5;color:#9e9e9e;">
+                This code expires shortly. If you did not attempt to sign in to the admin panel, ignore this email and contact a super_admin.
+              </p>
+            </td>
+          </tr>
+        </table>
+        <p style="margin:24px 0 0 0;font-size:12px;color:#6e6e6e;">
+          Codemo Teams &middot; codemoteams.org
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
