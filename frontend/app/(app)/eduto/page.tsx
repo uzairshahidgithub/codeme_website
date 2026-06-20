@@ -80,6 +80,55 @@ const HERO_IMAGES = [
 
 const DEFAULT_CATEGORIES = ['All', 'Frontend', 'Backend', 'DevOps', 'Design', 'Data Science', 'Mobile'];
 
+function EdutoCardPrice({ price, showDiscount }: { price: number; showDiscount: boolean }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '14px',
+        marginTop: '14px',
+        flexWrap: 'wrap',
+      }}
+    >
+      <span
+        style={{
+          fontSize: 'clamp(1.35rem, 2.2vw, 1.625rem)',
+          fontWeight: 700,
+          letterSpacing: '-0.03em',
+          lineHeight: 1.1,
+          color: 'var(--text1, var(--text-primary, inherit))',
+        }}
+      >
+        PKR {price.toLocaleString('en-PK')}
+      </span>
+      {showDiscount && (
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '0.9375rem',
+            fontWeight: 800,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: '#ffffff',
+            background: 'linear-gradient(135deg, #fb7185 0%, #ef4444 45%, #dc2626 100%)',
+            padding: '9px 18px',
+            borderRadius: '999px',
+            boxShadow: '0 4px 16px rgba(239, 68, 68, 0.4)',
+            border: '1px solid rgba(255, 255, 255, 0.25)',
+            lineHeight: 1,
+            minHeight: '38px',
+          }}
+        >
+          30% OFF
+        </span>
+      )}
+    </div>
+  );
+}
+
 // ----------------------------------------------------------------------
 // 2. Main Component
 // ----------------------------------------------------------------------
@@ -1465,15 +1514,7 @@ export default function EdutoPage() {
                     </div>
 
                     {/* Price */}
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '12px' }}>
-                      <hu-text weight="medium" size="xl" margin-bottom="none">PKR {course.price}</hu-text>
-                      {course.origPrice && <hu-text strikethrough color="red" size="sm" margin-bottom="none">PKR {course.origPrice}</hu-text>}
-                      {course.origPrice && (
-                        <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#ef4444', padding: '2px 6px', border: '1px solid #ef4444' }}>
-                          {Math.round(((course.origPrice - course.price) / course.origPrice) * 100)}% OFF
-                        </span>
-                      )}
-                    </div>
+                    <EdutoCardPrice price={course.price} showDiscount={!!course.origPrice} />
                   </div>
 
                   {/* CTA */}
@@ -1527,15 +1568,7 @@ export default function EdutoPage() {
                       </div>
 
                       {/* Price */}
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '12px' }}>
-                        <hu-text weight="medium" size="xl" margin-bottom="none">PKR {course.price}</hu-text>
-                        {course.origPrice && <hu-text strikethrough color="red" size="sm" margin-bottom="none">PKR {course.origPrice}</hu-text>}
-                        {course.origPrice && (
-                          <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#ef4444', padding: '2px 6px', border: '1px solid #ef4444' }}>
-                            {Math.round(((course.origPrice - course.price) / course.origPrice) * 100)}% OFF
-                          </span>
-                        )}
-                      </div>
+                      <EdutoCardPrice price={course.price} showDiscount={!!course.origPrice} />
                     </div>
 
                     {/* CTA */}
