@@ -15,7 +15,6 @@ import {
   useRef,
   useState,
 } from 'react'
-import { simulateOCR } from '@/lib/ocr'
 import { SoftReveal } from './SoftReveal'
 
 const MIN = 100
@@ -291,6 +290,7 @@ export function DonateSection() {
   const [amount, setAmount] = useState(500)
   const [open, setOpen] = useState(false)
   const [state, setState] = useState<ModalState>('idle')
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const closeTimerRef = useRef<number | null>(null)
@@ -308,9 +308,9 @@ export function DonateSection() {
     }
   }, [])
 
-  function openModal()  { setState('idle'); setOpen(true) }
+  function openModal()  { setState('idle'); setSubmitError(null); setOpen(true) }
   function closeModal() {
-    setOpen(false); setState('idle'); setDragging(false)
+    setOpen(false); setState('idle'); setSubmitError(null); setDragging(false)
     if (closeTimerRef.current) {
       window.clearTimeout(closeTimerRef.current); closeTimerRef.current = null
     }
@@ -318,19 +318,25 @@ export function DonateSection() {
 
   const handleFile = useCallback(async (file: File) => {
     setState('processing')
+    setSubmitError(null)
     try {
-      const ocr = await simulateOCR(file)
-      await fetch('/api/donations/intent', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          amount, currency: 'PKR',
-          ocr_text: ocr.text, transaction_id: ocr.transactionId,
-        }),
-      }).catch(() => null)
+      const form = new FormData()
+      form.append('amount', String(amount))
+      form.append('currency', 'PKR')
+      form.append('screenshot', file, file.name)
+
+      const res = await fetch('/api/donations/submit', { method: 'POST', body: form })
+      const payload = (await res.json().catch(() => null)) as { error?: string } | null
+      if (!res.ok) {
+        throw new Error(payload?.error ?? 'Could not submit donation')
+      }
+
       setState('success')
       closeTimerRef.current = window.setTimeout(closeModal, 3000)
-    } catch { setState('idle') }
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Upload failed')
+      setState('idle')
+    }
   }, [amount])
 
   function onPickClick() { fileInputRef.current?.click() }
@@ -618,6 +624,9 @@ export function DonateSection() {
                     <div className="text-xs text-text-tertiary">PNG or JPG — image is read once and discarded</div>
                   </div>
                   <input ref={fileInputRef} type="file" accept="image/png,image/jpeg" onChange={onFileChange} className="sr-only" />
+                  {submitError && (
+                    <p className="mt-3 text-sm text-text-error text-center" role="alert">{submitError}</p>
+                  )}
                 </>
               )}
 

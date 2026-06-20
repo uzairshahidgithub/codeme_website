@@ -26,6 +26,7 @@ const NAV_ITEMS = [
   { id: 'events',       label: 'Events',       href: '/admin/events',           icon: '/icons/Events (Default).svg' },
   { id: 'articles',     label: 'Articles',     href: '/admin/articles',         icon: '/icons/Articles (Default).svg' },
   { id: 'courses',      label: 'Courses',      href: '/admin/courses',          icon: '/icons/eLearn (Default).svg' },
+  { id: 'donations',    label: 'Donations',    href: '/admin/donations',        icon: '/icons/Projects (Default).svg' },
   { id: 'categories',   label: 'Categories',   href: '/admin/categories',       icon: '/icons/Articles (Default).svg' },
   { id: 'testimonials', label: 'Testimonials', href: '/admin/testimonials',     icon: '/icons/Achievements (Default).svg' },
   { id: 'settings',     label: 'Settings',     href: '/admin/settings',         icon: '/icons/Edit Profile (Default).svg' },
