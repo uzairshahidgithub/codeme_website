@@ -9,7 +9,6 @@ import {
   X,
 } from 'lucide-react'
 import {
-  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -34,7 +33,17 @@ const IMPACT_TIERS = [
   { upTo: Infinity, label: 'A full-quarter scholarship for a high-potential student.' },
 ] as const
 
-type ModalState = 'idle' | 'processing' | 'success'
+type ModalState = 'idle' | 'details' | 'processing' | 'success'
+
+const PAYMENT_METHODS = [
+  { value: 'jazzcash', label: 'JazzCash' },
+  { value: 'easypaisa', label: 'Easypaisa' },
+  { value: 'bank', label: 'Bank transfer' },
+  { value: 'other', label: 'Other' },
+] as const
+
+const donateInputClass =
+  'w-full rounded-[14px] px-4 py-3 text-sm text-text-primary bg-transparent border border-[var(--border)] focus:outline-none focus:ring-2 focus:ring-[color:var(--blue)]'
 
 function formatPkr(n: number): string {
   return `Rs. ${n.toLocaleString('en-PK')}`
@@ -292,6 +301,8 @@ export function DonateSection() {
   const [state, setState] = useState<ModalState>('idle')
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
+  const [receiptFile, setReceiptFile] = useState<File | null>(null)
+  const [formAmount, setFormAmount] = useState(String(amount))
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const closeTimerRef = useRef<number | null>(null)
 
@@ -308,24 +319,47 @@ export function DonateSection() {
     }
   }, [])
 
-  function openModal()  { setState('idle'); setSubmitError(null); setOpen(true) }
+  function openModal() {
+    setState('idle')
+    setSubmitError(null)
+    setReceiptFile(null)
+    setFormAmount(String(amount))
+    setOpen(true)
+  }
   function closeModal() {
-    setOpen(false); setState('idle'); setSubmitError(null); setDragging(false)
+    setOpen(false); setState('idle'); setSubmitError(null); setDragging(false); setReceiptFile(null)
     if (closeTimerRef.current) {
       window.clearTimeout(closeTimerRef.current); closeTimerRef.current = null
     }
   }
 
-  const handleFile = useCallback(async (file: File) => {
+  useEffect(() => {
+    if (open) setFormAmount(String(amount))
+  }, [amount, open])
+
+  function pickReceipt(file: File) {
+    setReceiptFile(file)
+    setSubmitError(null)
+    setState('details')
+  }
+
+  async function handleSubmitDetails(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!receiptFile) {
+      setSubmitError('Please upload your payment receipt.')
+      setState('idle')
+      return
+    }
+
     setState('processing')
     setSubmitError(null)
-    try {
-      const form = new FormData()
-      form.append('amount', String(amount))
-      form.append('currency', 'PKR')
-      form.append('screenshot', file, file.name)
 
-      const res = await fetch('/api/donations/submit', { method: 'POST', body: form })
+    const fd = new FormData(e.currentTarget)
+    fd.append('receipt', receiptFile, receiptFile.name)
+    fd.set('currency', 'PKR')
+
+    try {
+      const res = await fetch('/api/donations/submit', { method: 'POST', body: fd })
       const payload = (await res.json().catch(() => null)) as { error?: string } | null
       if (!res.ok) {
         throw new Error(payload?.error ?? 'Could not submit donation')
@@ -334,21 +368,21 @@ export function DonateSection() {
       setState('success')
       closeTimerRef.current = window.setTimeout(closeModal, 3000)
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Upload failed')
-      setState('idle')
+      setSubmitError(err instanceof Error ? err.message : 'Submit failed')
+      setState('details')
     }
-  }, [amount])
+  }
 
   function onPickClick() { fileInputRef.current?.click() }
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (file) void handleFile(file)
+    if (file) pickReceipt(file)
     e.target.value = ''
   }
   function onDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault(); setDragging(false)
     const file = e.dataTransfer.files?.[0]
-    if (file) void handleFile(file)
+    if (file) pickReceipt(file)
   }
 
   const impact = useMemo(() => impactFor(amount), [amount])
@@ -573,8 +607,7 @@ export function DonateSection() {
                     Send {formatPkr(amount)} to any account
                   </h3>
                   <p className="mt-2 text-sm text-text-tertiary">
-                    Pick the wallet you use, transfer the amount, then upload a screenshot of the
-                    success page. We extract the reference text and discard the image.
+                    Pick the wallet you use, transfer the amount, then upload your receipt and fill in the details.
                   </p>
 
                   <ul className="mt-5 space-y-2">
@@ -621,7 +654,7 @@ export function DonateSection() {
                   >
                     <Upload size={22} strokeWidth={1.6} style={{ color: 'var(--blue)' }} />
                     <div className="text-sm font-medium text-text-primary">Drop your screenshot here</div>
-                    <div className="text-xs text-text-tertiary">PNG or JPG — image is read once and discarded</div>
+                    <div className="text-xs text-text-tertiary">PNG or JPG — up to 5 MB</div>
                   </div>
                   <input ref={fileInputRef} type="file" accept="image/png,image/jpeg" onChange={onFileChange} className="sr-only" />
                   {submitError && (
@@ -630,11 +663,97 @@ export function DonateSection() {
                 </>
               )}
 
+              {state === 'details' && (
+                <form onSubmit={handleSubmitDetails} className="max-h-[70vh] overflow-y-auto pr-1">
+                  <div className="text-[11px] uppercase tracking-[0.18em] font-medium" style={{ color: 'var(--blue)' }}>
+                    Step 3 of 3 · Your details
+                  </div>
+                  <h3 className="mt-2 font-sans font-medium tracking-[-0.025em] text-text-primary text-[22px] leading-tight">
+                    Confirm your donation
+                  </h3>
+                  <p className="mt-2 text-sm text-text-tertiary">
+                    Receipt attached: <span className="text-text-secondary">{receiptFile?.name}</span>
+                  </p>
+
+                  <div className="mt-5 flex flex-col gap-4">
+                    <label className="flex flex-col gap-1.5">
+                      <span className="text-sm font-medium text-text-secondary">Full name</span>
+                      <input name="donor_name" type="text" required maxLength={120} className={donateInputClass} placeholder="Your name" />
+                    </label>
+
+                    <label className="flex flex-col gap-1.5">
+                      <span className="text-sm font-medium text-text-secondary">Amount sent (PKR)</span>
+                      <input
+                        name="amount"
+                        type="number"
+                        min={100}
+                        max={5000}
+                        step={1}
+                        required
+                        value={formAmount}
+                        onChange={(e) => setFormAmount(e.target.value)}
+                        className={donateInputClass}
+                      />
+                    </label>
+
+                    <label className="flex flex-col gap-1.5">
+                      <span className="text-sm font-medium text-text-secondary">Transaction ID / reference</span>
+                      <input name="transaction_id" type="text" required maxLength={120} className={donateInputClass} placeholder="From your receipt" />
+                    </label>
+
+                    <label className="flex flex-col gap-1.5">
+                      <span className="text-sm font-medium text-text-secondary">Payment method</span>
+                      <select name="payment_method" required defaultValue="jazzcash" className={donateInputClass}>
+                        {PAYMENT_METHODS.map((m) => (
+                          <option key={m.value} value={m.value}>{m.label}</option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="flex flex-col gap-1.5">
+                      <span className="text-sm font-medium text-text-secondary">Email (optional)</span>
+                      <input name="donor_email" type="email" maxLength={200} className={donateInputClass} placeholder="you@example.com" />
+                    </label>
+
+                    <label className="flex flex-col gap-1.5">
+                      <span className="text-sm font-medium text-text-secondary">Phone (optional)</span>
+                      <input name="donor_phone" type="tel" maxLength={40} className={donateInputClass} placeholder="03XX XXXXXXX" />
+                    </label>
+
+                    <label className="flex flex-col gap-1.5">
+                      <span className="text-sm font-medium text-text-secondary">Note (optional)</span>
+                      <textarea name="donor_notes" rows={3} maxLength={2000} className={donateInputClass} placeholder="Anything we should know?" />
+                    </label>
+                  </div>
+
+                  {submitError && (
+                    <p className="mt-3 text-sm text-text-error text-center" role="alert">{submitError}</p>
+                  )}
+
+                  <div className="mt-6 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => { setState('idle'); setSubmitError(null) }}
+                      className="flex-1 rounded-full px-4 py-3 text-sm font-medium border border-[var(--border)] text-text-secondary"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 rounded-full px-4 py-3 text-sm font-semibold text-white"
+                      style={{ background: 'var(--blue)' }}
+                    >
+                      Submit donation
+                    </button>
+                  </div>
+                </form>
+              )}
+
               {state === 'processing' && (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Loader2 size={36} strokeWidth={1.6} className="animate-spin" style={{ color: 'var(--blue)' }} />
-                  <div className="mt-5 text-base font-medium">Reading your receipt</div>
-                  <div className="mt-1 text-sm text-text-tertiary">Extracting transaction reference…</div>
+                  <div className="mt-5 text-base font-medium">Submitting your donation</div>
+                  <div className="mt-1 text-sm text-text-tertiary">Saving receipt and details…</div>
                 </div>
               )}
 

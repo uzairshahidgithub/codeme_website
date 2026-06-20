@@ -7,7 +7,7 @@ import { AdminDeleteButton } from '@/components/admin/AdminDeleteButton'
 export const dynamic = 'force-dynamic'
 
 const SELECT =
-  'id, user_id, amount, currency, ocr_text, transaction_id, extracted_amount, payment_method, status, admin_notes, created_at, updated_at'
+  'id, user_id, donor_name, donor_email, donor_phone, donor_notes, amount, currency, transaction_id, payment_method, receipt_path, status, admin_notes, created_at, updated_at'
 
 function statusColour(s: DonationStatus) {
   switch (s) {
@@ -45,7 +45,7 @@ export default async function AdminDonationsPage() {
           <span className="home-mono-eyebrow">admin · donations</span>
           <h1 className="text-text-primary mt-2" style={{ fontSize: 28, fontWeight: 700 }}>Donations</h1>
           <p className="text-text-tertiary mt-1" style={{ fontSize: 14 }}>
-            Manual transfer receipts — OCR text only, screenshots are never stored.
+            Manual transfer receipts submitted by donors.
             {pending > 0 && ` · ${pending} pending review`}
           </p>
         </div>
@@ -61,11 +61,12 @@ export default async function AdminDonationsPage() {
         <div
           className="grid items-center"
           style={{
-            gridTemplateColumns: '1fr 120px 1fr 120px 140px 160px',
+            gridTemplateColumns: '1fr 1fr 120px 1fr 120px 140px 160px',
             background: 'var(--bg-surface)', padding: '16px 24px', gap: 12,
           }}
         >
           <Cell>Submitted</Cell>
+          <Cell>Donor</Cell>
           <Cell>Amount</Cell>
           <Cell>Transaction ID</Cell>
           <Cell>Method</Cell>
@@ -80,12 +81,13 @@ export default async function AdminDonationsPage() {
               key={d.id}
               className="grid items-center"
               style={{
-                gridTemplateColumns: '1fr 120px 1fr 120px 140px 160px',
+                gridTemplateColumns: '1fr 1fr 120px 1fr 120px 140px 160px',
                 padding: '14px 24px', gap: 12,
                 borderTop: '1px solid var(--border)',
               }}
             >
               <div className="text-text-secondary text-sm">{formatDate(d.created_at)}</div>
+              <div className="text-text-primary text-sm truncate">{d.donor_name ?? '—'}</div>
               <div className="text-text-primary font-medium text-sm">{formatPkr(Number(d.amount))}</div>
               <div className="text-text-secondary text-sm truncate font-mono">
                 {d.transaction_id ?? '—'}
@@ -101,7 +103,7 @@ export default async function AdminDonationsPage() {
                 <Link href={`/admin/donations/${d.id}/edit`} className="text-text-link text-sm">Review</Link>
                 <AdminDeleteButton
                   id={d.id}
-                  label={d.transaction_id ?? formatPkr(Number(d.amount))}
+                  label={d.donor_name ?? d.transaction_id ?? formatPkr(Number(d.amount))}
                   deleteAction={deleteDonationAction}
                 />
               </div>

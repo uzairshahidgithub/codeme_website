@@ -1,12 +1,13 @@
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getDonationReceiptSignedUrl } from '@/lib/donations/receipt-url'
 import { DonationForm } from '@/components/admin/DonationForm'
 import type { DonationIntentRow } from '@/lib/schemas/donations'
 
 interface PageProps { params: Promise<{ id: string }> }
 
 const SELECT =
-  'id, user_id, amount, currency, ocr_text, transaction_id, extracted_amount, payment_method, status, admin_notes, created_at, updated_at'
+  'id, user_id, donor_name, donor_email, donor_phone, donor_notes, amount, currency, transaction_id, payment_method, receipt_path, status, admin_notes, created_at, updated_at'
 
 export default async function EditDonationPage({ params }: PageProps) {
   const { id } = await params
@@ -15,6 +16,7 @@ export default async function EditDonationPage({ params }: PageProps) {
   if (!row) notFound()
 
   const donation = row as DonationIntentRow
+  const receiptUrl = await getDonationReceiptSignedUrl(donation.receipt_path)
 
   return (
     <div className="px-6 md:px-10 py-8 max-w-[720px] mx-auto w-full">
@@ -23,9 +25,10 @@ export default async function EditDonationPage({ params }: PageProps) {
         <h1 className="text-text-primary mt-2" style={{ fontSize: 28, fontWeight: 700 }}>Review donation</h1>
         <p className="text-text-tertiary mt-1 text-sm">
           Submitted {new Date(donation.created_at).toLocaleString('en-PK')}
+          {donation.donor_name ? ` · ${donation.donor_name}` : ''}
         </p>
       </header>
-      <DonationForm initial={donation} />
+      <DonationForm initial={donation} receiptUrl={receiptUrl} />
     </div>
   )
 }

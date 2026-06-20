@@ -7,6 +7,7 @@ import type { DonationIntentRow, DonationStatus, PaymentMethod } from '@/lib/sch
 
 interface Props {
   initial: DonationIntentRow
+  receiptUrl: string | null
 }
 
 const STATUSES: DonationStatus[] = ['pending', 'verified', 'rejected']
@@ -18,7 +19,7 @@ const METHODS: { value: PaymentMethod; label: string }[] = [
   { value: 'other', label: 'Other' },
 ]
 
-export function DonationForm({ initial }: Props) {
+export function DonationForm({ initial, receiptUrl }: Props) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -30,23 +31,20 @@ export function DonationForm({ initial }: Props) {
 
     const fd = new FormData(e.currentTarget)
     const amount = Number(fd.get('amount'))
-    const extractedRaw = fd.get('extracted_amount')
-    const extracted_amount =
-      typeof extractedRaw === 'string' && extractedRaw.trim()
-        ? Number(extractedRaw)
-        : null
 
     try {
       await updateDonationAction({
         id: initial.id,
+        donor_name: String(fd.get('donor_name') || ''),
+        donor_email: String(fd.get('donor_email') || '') || null,
+        donor_phone: String(fd.get('donor_phone') || '') || null,
+        donor_notes: String(fd.get('donor_notes') || '') || null,
         amount,
         currency: String(fd.get('currency') || 'PKR'),
-        transaction_id: String(fd.get('transaction_id') || '') || null,
-        extracted_amount: Number.isFinite(extracted_amount as number) ? extracted_amount : null,
+        transaction_id: String(fd.get('transaction_id') || ''),
         payment_method: (String(fd.get('payment_method') || '') || null) as PaymentMethod,
         status: fd.get('status') as DonationStatus,
         admin_notes: String(fd.get('admin_notes') || '') || null,
-        ocr_text: String(fd.get('ocr_text') || '') || null,
       })
       router.push('/admin/donations')
       router.refresh()
@@ -63,6 +61,31 @@ export function DonationForm({ initial }: Props) {
         <p className="text-text-error text-sm" role="alert">{error}</p>
       )}
 
+      {receiptUrl && (
+        <Field label="Receipt screenshot">
+          <a href={receiptUrl} target="_blank" rel="noopener noreferrer" className="block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={receiptUrl}
+              alt="Donation receipt"
+              className="max-h-64 rounded-xl border border-[var(--border)] object-contain w-full bg-bg-surface"
+            />
+          </a>
+        </Field>
+      )}
+
+      <Field label="Donor name">
+        <input name="donor_name" type="text" required defaultValue={initial.donor_name ?? ''} className={inputClass} />
+      </Field>
+
+      <Field label="Email">
+        <input name="donor_email" type="email" defaultValue={initial.donor_email ?? ''} className={inputClass} />
+      </Field>
+
+      <Field label="Phone">
+        <input name="donor_phone" type="tel" defaultValue={initial.donor_phone ?? ''} className={inputClass} />
+      </Field>
+
       <Field label="Amount (PKR)">
         <input name="amount" type="number" min={100} max={5000} step={1} defaultValue={initial.amount} required className={inputClass} />
       </Field>
@@ -72,17 +95,7 @@ export function DonationForm({ initial }: Props) {
       </Field>
 
       <Field label="Transaction ID">
-        <input name="transaction_id" type="text" defaultValue={initial.transaction_id ?? ''} className={inputClass} />
-      </Field>
-
-      <Field label="Amount from receipt (OCR)">
-        <input
-          name="extracted_amount"
-          type="number"
-          step="0.01"
-          defaultValue={initial.extracted_amount ?? ''}
-          className={inputClass}
-        />
+        <input name="transaction_id" type="text" required defaultValue={initial.transaction_id ?? ''} className={inputClass} />
       </Field>
 
       <Field label="Payment method">
@@ -91,6 +104,10 @@ export function DonationForm({ initial }: Props) {
             <option key={m.label} value={m.value ?? ''}>{m.label}</option>
           ))}
         </select>
+      </Field>
+
+      <Field label="Donor note">
+        <textarea name="donor_notes" rows={3} defaultValue={initial.donor_notes ?? ''} className={inputClass} />
       </Field>
 
       <Field label="Status">
@@ -103,10 +120,6 @@ export function DonationForm({ initial }: Props) {
 
       <Field label="Admin notes">
         <textarea name="admin_notes" rows={3} defaultValue={initial.admin_notes ?? ''} className={inputClass} />
-      </Field>
-
-      <Field label="OCR text (from screenshot)">
-        <textarea name="ocr_text" rows={8} defaultValue={initial.ocr_text ?? ''} className={inputClass} />
       </Field>
 
       <div className="flex gap-3 pt-2">

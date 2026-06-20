@@ -34,18 +34,20 @@ export async function updateDonationAction(payload: UpdateDonationInput): Promis
     throw new Error(msg ?? 'Invalid donation data')
   }
 
-  const { id, ...fields } = parsed.data
+  const { id, donor_email, ...fields } = parsed.data
   const { error } = await adminDb()
     .from('donation_intents')
     .update({
+      donor_name: fields.donor_name,
+      donor_email: donor_email || null,
+      donor_phone: fields.donor_phone ?? null,
+      donor_notes: fields.donor_notes ?? null,
       amount: fields.amount,
       currency: fields.currency,
-      transaction_id: fields.transaction_id ?? null,
-      extracted_amount: fields.extracted_amount ?? null,
+      transaction_id: fields.transaction_id,
       payment_method: fields.payment_method ?? null,
       status: fields.status,
       admin_notes: fields.admin_notes ?? null,
-      ocr_text: fields.ocr_text ?? null,
     })
     .eq('id', id)
 
@@ -58,7 +60,15 @@ export async function updateDonationAction(payload: UpdateDonationInput): Promis
 
 export async function deleteDonationAction(id: string): Promise<void> {
   await assertAdminSession()
-  const { error } = await adminDb().from('donation_intents').delete().eq('id', id)
+  const db = adminDb()
+  const { data: row } = await db.from('donation_intents').select('receipt_path').eq('id', id).maybeSingle()
+
+  const { error } = await db.from('donation_intents').delete().eq('id', id)
   if (error) throw new Error(error.message)
+
+  if (row?.receipt_path) {
+    await db.storage.from('donation-receipts').remove([row.receipt_path])
+  }
+
   revalidatePath('/admin/donations')
 }
