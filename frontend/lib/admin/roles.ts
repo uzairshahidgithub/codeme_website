@@ -1,5 +1,2 @@
-export type AdminRole = 'admin' | 'super_admin'
-
-export function isAdminRole(role: string | null | undefined): role is AdminRole {
-  return role === 'admin' || role === 'super_admin'
-}
+export type { AdminRole, AssignableRole, ProfileRole } from '@/lib/roles'
+export { isAdminRole, canAccessDevTools, ASSIGNABLE_ROLES } from '@/lib/roles'

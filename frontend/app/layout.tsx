@@ -82,6 +82,19 @@ export const metadata: Metadata = {
     shortcut: '/favicon.svg',
     apple: '/favicon.svg',
   },
+  openGraph: {
+    title: 'Codemo Teams',
+    description: 'A collaborative coding community for developers worldwide.',
+    type: 'website',
+    url: 'https://codemoteams.org',
+    siteName: 'Codemo Teams',
+    images: [{ url: 'https://codemoteams.org/icons/codemo-logo-light.svg', width: 1200, height: 630, alt: 'Codemo Teams' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Codemo Teams',
+    images: ['https://codemoteams.org/icons/codemo-logo-light.svg'],
+  },
 }
 
 export default async function RootLayout({

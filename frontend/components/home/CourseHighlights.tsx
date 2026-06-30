@@ -1,5 +1,6 @@
 import { unstable_cache } from 'next/cache'
-import { fetchFeaturedCourses } from '@/lib/courses/public'
+import { fetchHomeFeaturedCourses, HOME_COURSE_MIN, HOME_COURSE_TARGET } from '@/lib/home/public'
+import { toHomeCourseItem } from '@/lib/courses/public'
 import { CourseDeck, MobileCourseList } from './CourseDeck'
 
 export interface CourseItem {
@@ -14,12 +15,6 @@ export interface CourseItem {
   description?: string | null
 }
 
-const getHomeCourses = unstable_cache(
-  async () => fetchFeaturedCourses(6),
-  ['home:courses:featured'],
-  { revalidate: 300, tags: ['courses'] },
-)
-
 const FALLBACK: CourseItem[] = [
   { id: 's1', title: 'Foundations of applied AI',       level: 'beginner',     instructor_name: 'Aanya Rao',      duration_hours: 8,  enrolled_count: 1240, tags: ['AI', 'Python', 'Foundations'], description: 'A practitioner-led path from "I trained a regression" to a working agent loop. Six modules, three shipped artefacts, no math gatekeeping.' },
   { id: 's2', title: 'Defensive web security',          level: 'intermediate', instructor_name: 'Marcus Lefèvre', duration_hours: 12, enrolled_count: 860,  tags: ['Security', 'OWASP', 'Web'], description: 'OWASP top-ten in production. Real attacks, real fixes, real CVEs — including the kind your linter never finds.' },
@@ -28,6 +23,25 @@ const FALLBACK: CourseItem[] = [
   { id: 's5', title: 'AI agents from zero',             level: 'beginner',     instructor_name: 'Hana Sato',      duration_hours: 5,  enrolled_count: 320,  tags: ['Agents', 'LLM'], description: 'Build a research assistant agent. Tools, traces, evals — and the why behind each. Repo provided.' },
   { id: 's6', title: 'Production observability',        level: 'intermediate', instructor_name: 'Wale Adebayo',   duration_hours: 7,  enrolled_count: 286,  tags: ['SRE', 'OpenTelemetry'], description: 'From print statements to spans, metrics and SLOs. Includes an OTel-based reference stack you can ship on Monday.' },
 ]
+
+const getHomeCourses = unstable_cache(
+  async () => {
+    const rows = await fetchHomeFeaturedCourses(HOME_COURSE_TARGET)
+    const mapped = rows.map(toHomeCourseItem)
+    if (mapped.length >= HOME_COURSE_MIN) return mapped
+
+    const seen = new Set(mapped.map((c) => c.id))
+    for (const item of FALLBACK) {
+      if (mapped.length >= HOME_COURSE_TARGET) break
+      if (seen.has(item.id)) continue
+      seen.add(item.id)
+      mapped.push(item)
+    }
+    return mapped
+  },
+  ['home:courses:featured:v2'],
+  { revalidate: 300, tags: ['courses'] },
+)
 
 export function CourseSkeletonStrip() {
   return (
@@ -41,8 +55,7 @@ export function CourseSkeletonStrip() {
 }
 
 export async function CourseHighlights() {
-  const fetched = await getHomeCourses()
-  const courses = fetched.length > 0 ? fetched : FALLBACK
+  const courses = await getHomeCourses()
   return (
     <>
       <CourseDeck courses={courses} />

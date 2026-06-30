@@ -976,6 +976,22 @@ export default function EdutoPage() {
     } catch {
       console.warn("localStorage full or unavailable. In-memory array used.");
     }
+
+    void fetch('/api/eduto/enroll', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        payment_id: paymentId,
+        course_id: selectedCourse!.id,
+        course_title: selectedCourse!.title,
+        student_name: formData.name,
+        student_email: formData.email,
+        student_phone: formData.phone,
+        student_city: formData.city,
+        amount: selectedCourse!.price,
+      }),
+    }).catch(() => null);
+
     setStep(3);
   };
 
@@ -1153,6 +1169,11 @@ export default function EdutoPage() {
     const next = enrollments.filter(e => e.paymentId !== id);
     setEnrollments(next);
     localStorage.setItem('eduto_enrollments', JSON.stringify(next));
+    void fetch('/api/eduto/enroll/clear', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ payment_id: id }),
+    }).catch(() => null);
   };
 
   const handleTabKey = (e: any, cat: string) => {

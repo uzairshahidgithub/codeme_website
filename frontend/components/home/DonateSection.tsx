@@ -20,11 +20,17 @@ const MIN = 100
 const MAX = 5000
 const STEP = 100
 
-const ACCOUNTS = [
+const ACCOUNTS_DEFAULT = [
   { label: 'JazzCash',                value: '0300 1234567',                 name: 'Codemo Teams' },
   { label: 'Easypaisa',               value: '0345 7654321',                 name: 'Codemo Teams' },
   { label: 'Meezan Bank transfer',    value: 'PK36 MEZN 0001 2345 6789 1011', name: 'Codemo Teams' },
 ] as const
+
+export type DonateAccount = { label: string; value: string; name: string }
+
+interface DonateSectionProps {
+  accounts?: DonateAccount[]
+}
 
 const IMPACT_TIERS = [
   { upTo:  400, label: 'A learner gets a month of mentor office hours.' },
@@ -295,7 +301,10 @@ function PulseCounter({ value }: { value: number }) {
   return <span className="inline-block tabular-nums">{formatPkr(value)}</span>
 }
 
-export function DonateSection() {
+export function DonateSection({ accounts: accountsProp }: DonateSectionProps = {}) {
+  const accounts: DonateAccount[] = accountsProp?.length
+    ? accountsProp
+    : ACCOUNTS_DEFAULT.map((a) => ({ label: a.label, value: a.value, name: a.name }))
   const [amount, setAmount] = useState(500)
   const [open, setOpen] = useState(false)
   const [state, setState] = useState<ModalState>('idle')
@@ -611,7 +620,7 @@ export function DonateSection() {
                   </p>
 
                   <ul className="mt-5 space-y-2">
-                    {ACCOUNTS.map((a) => (
+                    {accounts.map((a) => (
                       <li key={a.label}
                         className="flex items-center justify-between gap-3 rounded-[14px] px-4 py-3"
                         style={{

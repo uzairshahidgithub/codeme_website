@@ -6,6 +6,7 @@ import { SpotlightCard } from '@/components/home/SpotlightCard'
 import { AddToCalendar } from '@/components/home/AddToCalendar'
 import { createClient } from '@/lib/supabase/client'
 import { CodemoLogo } from '@/components/ui/CodemoLogo'
+import { LoadingDotsCentered } from '@/components/ui/LoadingDots'
 import 'react-phone-number-input/style.css'
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input'
 import { CATEGORY_COLOURS, CATEGORY_LABELS } from '@/lib/schemas/events'
@@ -124,7 +125,13 @@ export function EventsClient() {
   const [selectedEventToRegister, setSelectedEventToRegister] = useState<PublicEvent | null>(null)
   const [isSuccessPopupOpen, setIsSuccessPopupOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [registeredEvent, setRegisteredEvent] = useState<{ name: string, eventType: string, date: string, isDuplicate?: boolean } | null>(null)
+  const [registeredEvent, setRegisteredEvent] = useState<{
+    title: string
+    name: string
+    eventType: string
+    date: string
+    isDuplicate?: boolean
+  } | null>(null)
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [phone, setPhone] = useState<string | undefined>()
 
@@ -191,7 +198,7 @@ export function EventsClient() {
     const existingRegistration = checkRegistration(event.title)
     if (existingRegistration) {
       setSelectedEventToRegister(event)
-      setRegisteredEvent({ ...existingRegistration, isDuplicate: true })
+      setRegisteredEvent({ ...existingRegistration, title: event.title, isDuplicate: true })
       setIsSuccessPopupOpen(true)
       return
     }
@@ -257,6 +264,7 @@ export function EventsClient() {
       }
 
       const newRegistration = {
+        title: selectedEventToRegister!.title,
         name: fullName,
         eventType: selectedEventToRegister!.categoryLabel,
         date: new Date().toLocaleDateString('en-GB')
@@ -270,6 +278,7 @@ export function EventsClient() {
       console.error('Submission error:', error)
 
       const newRegistration = {
+        title: selectedEventToRegister!.title,
         name: fullName,
         eventType: selectedEventToRegister!.categoryLabel,
         date: new Date().toLocaleDateString('en-GB')
@@ -291,8 +300,8 @@ export function EventsClient() {
   }
 
   const handleShareLinkedIn = () => {
-    if (!registeredEvent || !selectedEventToRegister) return
-    const eventTitle = selectedEventToRegister.title
+    if (!registeredEvent) return
+    const eventTitle = registeredEvent.title
     const eventType = registeredEvent.eventType
     const userName = registeredEvent.name
     const pageUrl = encodeURIComponent(typeof window !== 'undefined' ? window.location.href : 'https://codemo.tech/events')
@@ -494,7 +503,7 @@ export function EventsClient() {
       )}
 
       {loadingEvents ? (
-        <div className="text-text-tertiary text-center py-16 text-sm">Loading events…</div>
+        <LoadingDotsCentered label="Loading events" />
       ) : (
       <>
       <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] lg:grid-cols-[1fr_340px] gap-8 lg:gap-12 items-start w-full">
@@ -992,7 +1001,7 @@ export function EventsClient() {
                 </div>
 
                 <div className="pass-body">
-                  <h2 className="pass-title">{selectedEventToRegister?.title || 'Event Pass'}</h2>
+                  <h2 className="pass-title">{registeredEvent.title}</h2>
                   <p className="pass-subtitle">
                     {registeredEvent.isDuplicate ? 'ALREADY REGISTERED' : 'REGISTRATION CONFIRMED'}
                   </p>
@@ -1065,7 +1074,7 @@ export function EventsClient() {
             {/* Event Title */}
             <div style={{ position: 'absolute', top: '220px', left: '64px', width: '922px' }}>
               <h1 style={{ fontSize: '72px', fontWeight: 800, color: '#ffffff', margin: 0, lineHeight: 1.1, textTransform: 'uppercase', overflowWrap: 'break-word' }}>
-                {selectedEventToRegister?.title || 'Event Pass'}
+                {registeredEvent.title}
               </h1>
             </div>
 

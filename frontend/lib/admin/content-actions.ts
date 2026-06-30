@@ -162,7 +162,7 @@ export async function deleteCategoryAction(id: string): Promise<void> {
   revalidatePath('/events')
 }
 
-export async function updateUserRoleAction(userId: string, role: 'member' | 'moderator' | 'admin' | 'super_admin'): Promise<void> {
+export async function updateUserRoleAction(userId: string, role: import('@/lib/roles').AssignableRole): Promise<void> {
   await assertAdminSession()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -180,7 +180,7 @@ export async function updateUserRoleAction(userId: string, role: 'member' | 'mod
   const { error } = await adminDb().from('profiles').update({ role }).eq('id', userId)
   if (error) throw new Error(error.message)
 
-  if (role === 'admin' || role === 'super_admin') {
+  if (role === 'admin' || role === 'super_admin' || role === 'dev') {
     try {
       const { data: authUser } = await adminDb().auth.admin.getUserById(userId)
       const email = authUser.user?.email

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { unstable_cache } from 'next/cache'
-import { createPublicClient } from '@/lib/supabase/public'
+import { fetchHomeFeaturedEvents } from '@/lib/home/public'
 import { SpotlightCard } from './SpotlightCard'
 import { AddToCalendar } from './AddToCalendar'
 import { SoftReveal } from './SoftReveal'
@@ -17,19 +17,9 @@ interface EventRow {
 
 const fetchUpcomingEvents = unstable_cache(
   async (): Promise<EventRow[]> => {
-    const supabase = createPublicClient()
-    const { data, error } = await supabase
-      .from('events')
-      .select('id, title, description, starts_at, category, max_attendees, banner_url')
-      .gte('starts_at', new Date().toISOString())
-      .eq('status', 'published')
-      .order('starts_at', { ascending: true })
-      .limit(3)
-    if (error) {
-      console.warn('events fetch failed:', error.message)
-      return []
-    }
-    return (data ?? []) as EventRow[]
+    const data = await fetchHomeFeaturedEvents(3)
+    if (data.length > 0) return data as EventRow[]
+    return FALLBACK_EVENTS
   },
   ['home:events:upcoming'],
   { revalidate: 60, tags: ['events'] },

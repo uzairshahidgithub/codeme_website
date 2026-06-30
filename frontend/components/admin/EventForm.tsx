@@ -55,9 +55,6 @@ export function EventForm({ initial, mode }: Props) {
   const [bannerUrl, setBannerUrl] = useState(initial?.banner_url ?? '')
   const [bannerUploading, setBannerUploading] = useState(false)
   const [maxAttendees, setMaxAttendees] = useState<string>(initial?.max_attendees?.toString() ?? '')
-  const [certEnabled, setCertEnabled] = useState(initial?.cert_enabled ?? false)
-  const [certTemplateUrl, setCertTemplateUrl] = useState(initial?.cert_template_url ?? '')
-  const [certUploading, setCertUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -117,15 +114,6 @@ export function EventForm({ initial, mode }: Props) {
     if (url) setBannerUrl(url)
   }
 
-  async function handleCertChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setCertUploading(true)
-    const url = await uploadFile(file, 'cert-templates')
-    setCertUploading(false)
-    if (url) setCertTemplateUrl(url)
-  }
-
   async function submit(status: 'draft' | 'published') {
     setError(null)
     const payload: CreateEventInput = {
@@ -136,9 +124,8 @@ export function EventForm({ initial, mode }: Props) {
       recurrence_rule: isRecurring ? buildRrule() : undefined,
       recurrence_label: isRecurring ? recLabel : undefined,
       max_attendees: maxAttendees ? Number(maxAttendees) : null,
-      cert_enabled: certEnabled,
+      cert_enabled: false,
       banner_url: bannerUrl || undefined,
-      cert_template_url: certEnabled ? certTemplateUrl : undefined,
       status,
     }
     const parsed = CreateEventSchema.safeParse(payload)
@@ -279,34 +266,6 @@ export function EventForm({ initial, mode }: Props) {
           onChange={(e) => setMaxAttendees(e.target.value)}
           placeholder="Unlimited" className="codemo-input"
         />
-      </Field>
-
-      <Field label="Certificate">
-        <ToggleSwitch checked={certEnabled} onChange={setCertEnabled} label="Enable Certificate for Attendees" />
-        {certEnabled && (
-          <div className="flex flex-col gap-3 mt-3">
-            <input
-              type="file" accept="image/png,image/jpeg,application/pdf"
-              onChange={handleCertChange}
-              className="text-text-secondary" style={{ fontSize: 14 }}
-            />
-            {certUploading && <p className="text-text-muted" style={{ fontSize: 13 }}>Uploading…</p>}
-            {certTemplateUrl && (
-              <div className="relative" style={{ width: '100%', height: 200, borderRadius: 12, overflow: 'hidden', background: 'var(--bg-input)' }}>
-                {certTemplateUrl.toLowerCase().includes('.pdf') ? (
-                  <div className="flex items-center justify-center h-full text-text-tertiary" style={{ fontSize: 14 }}>
-                    PDF template uploaded
-                  </div>
-                ) : (
-                  <Image src={certTemplateUrl} alt="" fill sizes="820px" className="object-contain" />
-                )}
-              </div>
-            )}
-            <p className="text-text-muted italic" style={{ fontSize: 12 }}>
-              Template should include {'{name}'} {'{event}'} {'{date}'} placeholders for auto-generation.
-            </p>
-          </div>
-        )}
       </Field>
 
       {error && (

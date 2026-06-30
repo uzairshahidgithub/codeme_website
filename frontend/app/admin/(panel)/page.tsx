@@ -155,19 +155,11 @@ export default async function AdminDashboardPage() {
           Publish Course
         </Link>
         <Link
-          href="/admin/testimonials"
+          href="/admin/home"
           className="inline-flex items-center gap-2 rounded-full"
           style={{ padding: '12px 22px', background: 'transparent', color: 'var(--text1)', fontSize: 14, fontWeight: 500, border: '1px solid var(--border)' }}
         >
-          Approve Testimonials
-          {(stats?.pending_testimonials ?? 0) > 0 && (
-            <span
-              className="inline-flex items-center justify-center rounded-full"
-              style={{ minWidth: 20, height: 20, padding: '0 6px', background: '#ff5c5c', color: '#fff', fontSize: 11, fontWeight: 600 }}
-            >
-              {stats?.pending_testimonials}
-            </span>
-          )}
+          Customize Home
         </Link>
       </div>
     </div>

@@ -150,7 +150,20 @@ function MagneticLink({
    Pure atmosphere. Swap in a real <Image src=… fill className="object-cover" />
    when the asset is provided — this container already has the
    right rounded shape and min-heights. */
-function ContactPortrait() {
+function ContactPortrait({ imageUrl }: { imageUrl?: string | null }) {
+  if (imageUrl) {
+    return (
+      <div className="relative w-full h-full min-h-[320px] lg:min-h-[460px] rounded-[28px] overflow-hidden border border-border-subtle">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0"
+          style={{ background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.22) 100%)' }}
+        />
+      </div>
+    )
+  }
   return (
     <div className="relative w-full h-full min-h-[320px] lg:min-h-[460px] rounded-[28px] overflow-hidden border border-border-subtle">
       {/* Base mesh — deep Codemo blue, no text, no captions */}
@@ -196,7 +209,7 @@ function ContactPortrait() {
   )
 }
 
-export function ContactSection() {
+export function ContactSection({ portraitUrl }: { portraitUrl?: string | null }) {
   return (
     <section
       id="contact"
@@ -292,7 +305,7 @@ export function ContactSection() {
 
           {/* ── RIGHT — image / portrait area ──────────── */}
           <div className="lg:col-span-5 flex">
-            <ContactPortrait />
+            <ContactPortrait imageUrl={portraitUrl} />
           </div>
         </div>
       </div>

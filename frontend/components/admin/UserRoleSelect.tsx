@@ -3,9 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateUserRoleAction } from '@/lib/admin/content-actions'
-
-const ROLES = ['member', 'moderator', 'admin', 'super_admin'] as const
-type UserRole = (typeof ROLES)[number]
+import { ASSIGNABLE_ROLES, type AssignableRole } from '@/lib/roles'
 
 interface Props {
   userId: string
@@ -13,17 +11,28 @@ interface Props {
   disabled?: boolean
 }
 
+const ROLE_LABELS: Record<AssignableRole, string> = {
+  member: 'Member',
+  dev: 'Dev',
+  admin: 'Admin',
+  super_admin: 'Super admin',
+}
+
 export function UserRoleSelect({ userId, currentRole, disabled }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+
+  const displayRole = ASSIGNABLE_ROLES.includes(currentRole as AssignableRole)
+    ? currentRole
+    : 'member'
 
   function onChange(next: string) {
     if (next === currentRole || disabled) return
     setError(null)
     startTransition(async () => {
       try {
-        await updateUserRoleAction(userId, next as UserRole)
+        await updateUserRoleAction(userId, next as AssignableRole)
         router.refresh()
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to update role')
@@ -34,22 +43,20 @@ export function UserRoleSelect({ userId, currentRole, disabled }: Props) {
   return (
     <div className="flex flex-col gap-1">
       <select
-        value={currentRole}
+        value={displayRole}
         disabled={disabled || pending}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-lg text-text-primary outline-none focus:ring-2 focus:ring-accent-primary disabled:opacity-50"
+        className="rounded-lg text-text-primary bg-bg-surface border border-[var(--border)] outline-none focus:ring-2 focus:ring-accent-primary disabled:opacity-50 dark:bg-bg-surface dark:text-text-primary"
         style={{
-          background: 'var(--input-glass)',
-          border: '1px solid var(--border)',
           padding: '6px 10px',
           fontSize: 13,
-          minWidth: 120,
+          minWidth: 130,
         }}
         aria-label="User role"
       >
-        {ROLES.map((role) => (
-          <option key={role} value={role}>
-            {role.replace('_', ' ')}
+        {ASSIGNABLE_ROLES.map((role) => (
+          <option key={role} value={role} className="bg-bg-surface text-text-primary">
+            {ROLE_LABELS[role]}
           </option>
         ))}
       </select>

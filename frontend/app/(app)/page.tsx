@@ -10,6 +10,7 @@ import { ContactSection } from '@/components/home/ContactSection'
 import { ScrollAmbient } from '@/components/home/ScrollAmbient'
 import { CustomCursor } from '@/components/home/CustomCursor'
 import { Footer } from '@/components/layout/Footer'
+import { fetchContactPortraitUrl, fetchDonationAccounts } from '@/lib/home/public'
 
 export const metadata: Metadata = {
   title: 'Codemo Teams',
@@ -20,13 +21,15 @@ export const metadata: Metadata = {
     description:
       'Join a community of developers solving real problems together. Events, eLearn courses, projects and career support for builders worldwide.',
     type: 'website',
-    url: 'https://codemoteam.org',
+    url: 'https://codemoteams.org',
     siteName: 'Codemo Teams',
+    images: [{ url: 'https://codemoteams.org/icons/codemo-logo-light.svg', width: 1200, height: 630, alt: 'Codemo Teams' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Codemo Teams',
     description: 'Community of developers building together.',
+    images: ['https://codemoteams.org/icons/codemo-logo-light.svg'],
   },
 }
 
@@ -34,7 +37,7 @@ const ORGANIZATION_JSONLD = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
   name: 'Codemo Teams',
-  url: 'https://codemoteam.org',
+  url: 'https://codemoteams.org',
   description: 'A community of future tech leaders building solutions together.',
   sameAs: [
     'https://www.linkedin.com/company/codemo-teams',
@@ -43,29 +46,30 @@ const ORGANIZATION_JSONLD = {
   ],
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [accountsRaw, portraitUrl] = await Promise.all([
+    fetchDonationAccounts(),
+    fetchContactPortraitUrl(),
+  ])
+
+  const accounts = accountsRaw.map((a) => ({
+    label: a.label,
+    value: a.account_value,
+    name: a.account_name,
+  }))
+
   return (
-    /* NO overflow-hidden on this wrapper.
-       Per CSS spec, any ancestor with overflow:hidden becomes
-       the "scrolling ancestor" for descendant sticky elements
-       — but a hidden ancestor never scrolls, so any nested
-       sticky (e.g. CourseDeck) silently fails to pin. The
-       rounded-corner clip lives on the Hero section itself
-       instead (Hero already has its own overflow-hidden). */
     <div className="relative flex flex-col w-full">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_JSONLD) }}
       />
 
-      {/* Page-wide scroll-linked ambient backdrop */}
       <ScrollAmbient />
-      {/* Simple O'Reilly-style cursor — fine pointers only */}
       <CustomCursor />
 
       <Hero />
 
-      {/* Courses repositioned above Events */}
       <Suspense fallback={<CourseSkeletonStrip />}>
         <CourseHighlights />
       </Suspense>
@@ -82,8 +86,8 @@ export default function HomePage() {
         <Testimonials />
       </Suspense>
 
-      <DonateSection />
-      <ContactSection />
+      <DonateSection accounts={accounts} />
+      <ContactSection portraitUrl={portraitUrl} />
 
       <Footer />
     </div>

@@ -74,10 +74,7 @@ export function CategoryManager({ initial }: Props) {
         </div>
         {initial.map((row) => (
           <div key={row.id} className="grid items-center" style={{ gridTemplateColumns: '1fr 1fr 80px 80px 120px', padding: '14px 24px', gap: 12, borderTop: '1px solid var(--border)' }}>
-            <div className="flex items-center gap-2">
-              <span style={{ width: 10, height: 10, borderRadius: 999, background: row.color }} />
-              <span className="text-text-primary font-medium">{row.label}</span>
-            </div>
+            <span className="text-text-primary font-medium">{row.label}</span>
             <span className="text-text-secondary text-sm">{row.slug}</span>
             <span className="text-text-secondary text-sm capitalize">{row.kind}</span>
             <span className="text-text-secondary text-sm">{row.sort_order}</span>
@@ -100,7 +97,6 @@ export function CategoryManager({ initial }: Props) {
           <option value="event">Event</option>
           <option value="course">Course</option>
         </select>
-        <input type="color" value={form.color} onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))} className="h-10 w-full rounded-lg border border-border-subtle" />
         <input type="number" min={0} value={form.sort_order} onChange={(e) => setForm((f) => ({ ...f, sort_order: Number(e.target.value) }))} placeholder="Sort order" className="codemo-input" />
         {error && <p className="text-text-error text-sm">{error}</p>}
         <div className="flex gap-2">

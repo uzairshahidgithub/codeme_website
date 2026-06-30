@@ -1,0 +1,5 @@
+Contact: mailto:security@codemoteams.org
+Preferred-Languages: en
+Canonical: https://codemoteams.org/.well-known/security.txt
+Policy: https://codemoteams.org/contact
+Expires: 2027-06-25T00:00:00.000Z
